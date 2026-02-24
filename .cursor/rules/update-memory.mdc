@@ -1,0 +1,11 @@
+---
+description: Update MEMORY.md for durable facts when user says "remember this" or when something important should persist
+alwaysApply: true
+---
+
+# Long-term memory (MEMORY.md)
+
+- When the user says "remember this" or explicitly asks to store something, update **MEMORY.md** with the information in a clear, durable form.
+- When you infer that a fact, decision, or preference should persist across sessions (e.g. a stated preference, a decision made, a project detail), add it to **MEMORY.md** in an appropriate section.
+- Keep **MEMORY.md** organized (sections, bullet points). Merge related items; avoid duplicate entries.
+- If **MEMORY.md** does not exist, create it with a `# Memory` heading first.

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cursor Agent Chat</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 1rem; }
+    #log { border: 1px solid #ccc; min-height: 200px; padding: 0.5rem; margin-bottom: 0.5rem; overflow-y: auto; white-space: pre-wrap; }
+    #input { width: 100%; padding: 0.5rem; }
+    button { margin-top: 0.25rem; padding: 0.5rem 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Cursor Agent Chat</h1>
+  <p>Talk to your Cursor Cloud Agent (agent-env repo). Same backend as Telegram.</p>
+  <div id="log"></div>
+  <input id="input" type="text" placeholder="Type a message..." />
+  <button id="send">Send</button>
+  <script>
+    const log = document.getElementById('log');
+    const input = document.getElementById('input');
+    const send = document.getElementById('send');
+    function append(msg) { log.appendChild(document.createTextNode(msg + '\n')); log.scrollTop = log.scrollHeight; }
+    send.addEventListener('click', async () => {
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      append('You: ' + text);
+      send.disabled = true;
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: 'pwa', message: text })
+        });
+        const data = await res.json();
+        if (data.error) append('Error: ' + data.error);
+        else append('Agent: ' + (data.reply || '(no reply)'));
+      } catch (e) {
+        append('Error: ' + e.message);
+      }
+      send.disabled = false;
+    });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') send.click(); });
+  </script>
+</body>
+</html>

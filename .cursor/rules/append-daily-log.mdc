@@ -1,0 +1,10 @@
+---
+description: Append session summaries and key events to memory/YYYY-MM-DD.md
+alwaysApply: true
+---
+
+# Daily log (append-only)
+
+- After significant events or at the end of a session, append a short entry to **memory/YYYY-MM-DD.md** (today's date in ISO format).
+- Keep entries concise: timestamp or context, then the note. Append only; do not remove or rewrite existing content.
+- If the file does not exist, create it with a heading (e.g. `# YYYY-MM-DD`) then append.

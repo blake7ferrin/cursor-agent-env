@@ -1,0 +1,14 @@
+---
+description: At session start, read MEMORY.md and today's (and yesterday's) daily log
+alwaysApply: true
+---
+
+# Memory load at session start
+
+When the conversation begins or when you have fresh context:
+
+1. Read **MEMORY.md** to load durable facts, preferences, and decisions.
+2. Read **memory/YYYY-MM-DD.md** for today (current date in ISO format).
+3. Optionally read **memory/YYYY-MM-DD.md** for yesterday to capture recent context.
+
+Use the actual calendar date for YYYY-MM-DD (e.g. 2025-02-24). If a file does not exist, treat it as empty and continue; create it when you first write to it.

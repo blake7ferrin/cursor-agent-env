@@ -1,0 +1,10 @@
+---
+description: Treat missing MEMORY.md or memory/YYYY-MM-DD.md as empty; create with header when first writing
+alwaysApply: true
+---
+
+# Graceful empty memory
+
+- If **MEMORY.md** or **memory/YYYY-MM-DD.md** does not exist, do not fail or report an error. Treat it as empty content.
+- When you first write to such a file, create it with a minimal header (e.g. `# Memory` or `# YYYY-MM-DD`) then add the content.
+- This ensures the agent works from a fresh repo or the first run of a new day without manual file creation.

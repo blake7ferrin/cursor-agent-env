@@ -1,0 +1,9 @@
+# Bridge
+bridge/node_modules/
+bridge/.env
+bridge/.env.*
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
