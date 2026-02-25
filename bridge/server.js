@@ -11,7 +11,7 @@ import { buildEstimate, renderEstimateHtml } from './estimator-engine.js';
 import { EstimatorValidationError } from './estimator-domain.js';
 import {
   buildHousecallAppointmentLookupRequest,
-  buildHousecallExportRequest,
+  buildHousecallUpsertPlan,
   extractHousecallIdsFromObject,
 } from './housecall-mapper.js';
 import { getHousecallConfigSummary, housecallRequest, testHousecallConnection } from './housecall-pro.js';
@@ -117,6 +117,16 @@ function mergeHousecallContext(primary = {}, fallback = {}) {
     estimateOptionId: asTrimmedString(primary.estimateOptionId || fallback.estimateOptionId),
     appointmentId: asTrimmedString(primary.appointmentId || fallback.appointmentId),
   };
+}
+
+function isHousecallNotFound(upstream = {}) {
+  if (upstream.status === 404 || upstream.status === 410) return true;
+  if (upstream.status !== 400) return false;
+  const bodyText =
+    typeof upstream.body === 'string'
+      ? upstream.body
+      : JSON.stringify(upstream.body || {});
+  return /not[\s_-]?found|does\s+not\s+exist|unknown/i.test(bodyText);
 }
 
 const applyRateLimit = createRateLimiter({
@@ -410,16 +420,20 @@ app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, async
     };
     let resolvedContext = mergeHousecallContext(directContext, {});
     let lookup = null;
+    const hasLookupTemplate = Boolean(
+      housecallOpts.appointment_lookup_path ||
+        housecallOpts.appointmentLookupPath ||
+        process.env.HOUSECALL_PRO_APPOINTMENT_LOOKUP_PATH,
+    );
 
     const shouldLookupFromAppointment =
       !!resolvedContext.appointmentId &&
-      !resolvedContext.jobId &&
       !resolvedContext.estimateId &&
+      hasLookupTemplate &&
       (housecallOpts.resolve_context === true ||
         housecallOpts.resolveContext === true ||
-        housecallOpts.appointment_lookup_path ||
-        housecallOpts.appointmentLookupPath ||
-        process.env.HOUSECALL_PRO_APPOINTMENT_LOOKUP_PATH);
+        housecallOpts.auto_upsert !== false ||
+        housecallOpts.autoUpsert !== false);
 
     if (shouldLookupFromAppointment) {
       const lookupRequest = buildHousecallAppointmentLookupRequest({
@@ -447,10 +461,11 @@ app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, async
       }
     }
 
-    const requestPayload = buildHousecallExportRequest(estimate, {
+    const exportPlan = buildHousecallUpsertPlan(estimate, {
       endpoint: housecallOpts.endpoint,
       method: housecallOpts.method,
       mode: housecallOpts.mode,
+      autoUpsert: housecallOpts.auto_upsert ?? housecallOpts.autoUpsert,
       customerId: housecallOpts.customer_id ?? housecallOpts.customerId,
       jobId: resolvedContext.jobId,
       estimateId: resolvedContext.estimateId,
@@ -469,41 +484,91 @@ app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, async
       return res.json({
         dry_run: true,
         estimate,
-        resolved_context: requestPayload.context,
+        upsert_strategy: exportPlan.strategy,
+        resolved_context: exportPlan.context,
         lookup,
-        housecall_request: {
+        housecall_plan: exportPlan.requests.map((requestPayload) => ({
           mode: requestPayload.mode,
           method: requestPayload.method,
           path: requestPayload.path,
           path_template: requestPayload.path_template,
           payload: requestPayload.payload,
-        },
+        })),
       });
     }
 
-    const upstream = await housecallRequest({
-      method: requestPayload.method,
-      path: requestPayload.path,
-      body: requestPayload.payload,
-    });
+    const attempts = [];
+    let selectedRequest = null;
+    let selectedResponse = null;
 
-    return res.status(upstream.ok ? 200 : 502).json({
-      estimate,
-      resolved_context: requestPayload.context,
-      lookup,
-      housecall_request: {
+    for (let index = 0; index < exportPlan.requests.length; index += 1) {
+      const requestPayload = exportPlan.requests[index];
+      const upstream = await housecallRequest({
+        method: requestPayload.method,
+        path: requestPayload.path,
+        body: requestPayload.payload,
+      });
+
+      attempts.push({
         mode: requestPayload.mode,
         method: requestPayload.method,
         path: requestPayload.path,
         path_template: requestPayload.path_template,
-        payload_preview: sanitizePreview(requestPayload.payload, 2000),
-      },
-      housecall_response: {
         ok: upstream.ok,
         status: upstream.status,
         statusText: upstream.statusText,
-        body: upstream.body,
-      },
+        response_preview: sanitizePreview(upstream.body, 1000),
+      });
+
+      if (upstream.ok) {
+        selectedRequest = requestPayload;
+        selectedResponse = upstream;
+        break;
+      }
+
+      const hasRemainingAttempts = index < exportPlan.requests.length - 1;
+      if (!hasRemainingAttempts) {
+        selectedRequest = requestPayload;
+        selectedResponse = upstream;
+        break;
+      }
+      if (exportPlan.strategy !== 'auto_upsert') {
+        selectedRequest = requestPayload;
+        selectedResponse = upstream;
+        break;
+      }
+      if (!isHousecallNotFound(upstream)) {
+        selectedRequest = requestPayload;
+        selectedResponse = upstream;
+        break;
+      }
+    }
+
+    const success = Boolean(selectedResponse?.ok);
+
+    return res.status(success ? 200 : 502).json({
+      estimate,
+      upsert_strategy: exportPlan.strategy,
+      resolved_context: exportPlan.context,
+      lookup,
+      attempts,
+      housecall_request: selectedRequest
+        ? {
+            mode: selectedRequest.mode,
+            method: selectedRequest.method,
+            path: selectedRequest.path,
+            path_template: selectedRequest.path_template,
+            payload_preview: sanitizePreview(selectedRequest.payload, 2000),
+          }
+        : null,
+      housecall_response: selectedResponse
+        ? {
+            ok: selectedResponse.ok,
+            status: selectedResponse.status,
+            statusText: selectedResponse.statusText,
+            body: selectedResponse.body,
+          }
+        : null,
     });
   } catch (err) {
     return handleEstimatorError(err, res);

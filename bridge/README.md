@@ -227,6 +227,36 @@ curl -X POST http://localhost:3000/estimator/export/housecall \
   }'
 ```
 
+### 6b) Auto-upsert target (recommended default)
+
+If your team only knows partial context, the export route now defaults to an **auto-upsert strategy**:
+
+1. Try `update_estimate` when an `estimate_id` is available
+2. If no estimate id, try appointment context resolution (when appointment lookup path is configured)
+3. If a `job_id` exists, try `add_to_job`
+4. Fallback to `create_estimate`
+
+On live export, the bridge automatically falls through to the next step only for "not found" style failures.
+
+```bash
+curl -X POST http://localhost:3000/estimator/export/housecall \
+  -H "Content-Type: application/json" \
+  -H "x-bridge-token: $BRIDGE_AUTH_TOKEN" \
+  -d '{
+    "user_id": "pwa:blake",
+    "customer": { "name": "Jane Smith", "housecall_customer_id": "cust_123" },
+    "project": { "summary": "Finalize scope after field inspection" },
+    "selections": [{ "sku": "HP-3T-16", "quantity": 1 }],
+    "housecall": {
+      "auto_upsert": true,
+      "appointment_id": "apt_123",
+      "resolve_context": true,
+      "appointment_lookup_path": "/v1/schedule/{appointment_id}",
+      "dry_run": true
+    }
+  }'
+```
+
 ### 7) Resolve context from an appointment before export
 
 ```bash
@@ -258,7 +288,8 @@ You can also do this inside export by providing:
   - `housecall.endpoint` to override the path
   - `housecall.payload_override` to send your exact JSON body
 - Supported `housecall.mode` values:
-  - `create_estimate` (default)
+  - `auto_upsert` (default if no explicit mode)
+  - `create_estimate` (always create new estimate)
   - `add_to_job` (requires `job_id`)
   - `update_estimate` (requires `estimate_id`)
   - `add_option_note` (requires `estimate_id` + `estimate_option_id`)

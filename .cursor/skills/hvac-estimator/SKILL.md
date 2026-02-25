@@ -47,6 +47,7 @@ Assuming bridge is running and `BRIDGE_AUTH_TOKEN` is available:
 4. Export to Housecall Pro CRM:
    - `POST /estimator/export/housecall`
    - Use `housecall.dry_run=true` before live export.
+   - Prefer `housecall.auto_upsert=true` (or `housecall.mode="auto_upsert"`) so the bridge picks the best target automatically.
    - Set `housecall.mode` for context-aware exports:
      - `update_estimate` when estimate already exists
      - `add_to_job` when adding a new estimate to an existing job

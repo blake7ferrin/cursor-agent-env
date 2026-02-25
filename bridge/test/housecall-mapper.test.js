@@ -4,6 +4,7 @@ import {
   buildHousecallAppointmentLookupRequest,
   buildHousecallEstimatePayload,
   buildHousecallExportRequest,
+  buildHousecallUpsertPlan,
   extractHousecallIdsFromObject,
 } from '../housecall-mapper.js';
 
@@ -131,6 +132,38 @@ test('buildHousecallAppointmentLookupRequest resolves appointment template', () 
   });
   assert.equal(lookup.method, 'GET');
   assert.equal(lookup.path, '/v1/schedule/apt_111');
+});
+
+test('buildHousecallUpsertPlan auto strategy orders update then add_to_job then create', () => {
+  const estimate = createSampleEstimate();
+  estimate.project.housecall_estimate_id = 'est_222';
+  const plan = buildHousecallUpsertPlan(estimate, {});
+  assert.equal(plan.strategy, 'auto_upsert');
+  assert.equal(plan.requests.length, 3);
+  assert.deepEqual(
+    plan.requests.map((item) => item.mode),
+    ['update_estimate', 'add_to_job', 'create_estimate'],
+  );
+});
+
+test('buildHousecallUpsertPlan explicit mode uses single request', () => {
+  const estimate = createSampleEstimate();
+  const plan = buildHousecallUpsertPlan(estimate, {
+    mode: 'add_to_job',
+    job_id: 'job_123',
+  });
+  assert.equal(plan.strategy, 'explicit');
+  assert.equal(plan.requests.length, 1);
+  assert.equal(plan.requests[0].mode, 'add_to_job');
+});
+
+test('buildHousecallUpsertPlan supports auto_upsert mode aliases', () => {
+  const estimate = createSampleEstimate();
+  estimate.project = { summary: 'No linked IDs' };
+  const plan = buildHousecallUpsertPlan(estimate, { mode: 'auto' });
+  assert.equal(plan.strategy, 'auto_upsert');
+  assert.equal(plan.requests.length, 1);
+  assert.equal(plan.requests[0].mode, 'create_estimate');
 });
 
 test('extractHousecallIdsFromObject extracts nested ids', () => {

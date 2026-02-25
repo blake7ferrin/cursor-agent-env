@@ -2,6 +2,8 @@ function roundMoney(value) {
   return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
 }
 
+const EXPLICIT_MODES = new Set(['create_estimate', 'add_to_job', 'update_estimate', 'add_option_note']);
+
 function asTrimmedString(value, defaultValue = '') {
   if (value === undefined || value === null) return defaultValue;
   const str = `${value}`.trim();
@@ -110,12 +112,7 @@ function extractHousecallContextFromEstimate(estimate = {}) {
 
 function inferExportMode(options = {}, context = {}) {
   const normalizedMode = asTrimmedString(options.mode || '').toLowerCase();
-  if (
-    normalizedMode === 'create_estimate' ||
-    normalizedMode === 'add_to_job' ||
-    normalizedMode === 'update_estimate' ||
-    normalizedMode === 'add_option_note'
-  ) {
+  if (EXPLICIT_MODES.has(normalizedMode)) {
     return normalizedMode;
   }
 
@@ -188,9 +185,9 @@ export function buildHousecallEstimatePayload(estimate, options = {}) {
   return payload;
 }
 
-export function buildHousecallExportRequest(estimate, options = {}) {
+function resolveHousecallContext(estimate, options = {}) {
   const estimateContext = extractHousecallContextFromEstimate(estimate);
-  const context = {
+  return {
     jobId: asTrimmedString(options.jobId || options.job_id || estimateContext.jobId),
     estimateId: asTrimmedString(options.estimateId || options.estimate_id || estimateContext.estimateId),
     estimateOptionId: asTrimmedString(
@@ -200,7 +197,29 @@ export function buildHousecallExportRequest(estimate, options = {}) {
       options.appointmentId || options.appointment_id || estimateContext.appointmentId,
     ),
   };
-  const mode = inferExportMode(options, context);
+}
+
+function modeFromOptions(options = {}) {
+  const mode = asTrimmedString(options.mode).toLowerCase();
+  if (!mode) return '';
+  if (mode === 'auto' || mode === 'auto_upsert' || mode === 'upsert') return 'auto_upsert';
+  if (EXPLICIT_MODES.has(mode)) return mode;
+  return '';
+}
+
+function shouldAutoUpsert(options = {}) {
+  const explicitMode = modeFromOptions(options);
+  if (EXPLICIT_MODES.has(explicitMode)) return false;
+  if (options.auto_upsert === false || options.autoUpsert === false) return false;
+  if (options.auto_upsert === true || options.autoUpsert === true) return true;
+  return true;
+}
+
+export function buildHousecallExportRequest(estimate, options = {}) {
+  const context = resolveHousecallContext(estimate, options);
+  const mode = EXPLICIT_MODES.has(modeFromOptions(options))
+    ? modeFromOptions(options)
+    : inferExportMode(options, context);
 
   const createEstimatePath =
     asTrimmedString(options.createEstimatePath || options.create_estimate_path) ||
@@ -275,6 +294,56 @@ export function buildHousecallExportRequest(estimate, options = {}) {
     path: resolvedEndpoint.path,
     path_template: resolvedEndpoint.template,
     payload,
+  };
+}
+
+export function buildHousecallUpsertPlan(estimate, options = {}) {
+  const explicitMode = modeFromOptions(options);
+  const context = resolveHousecallContext(estimate, options);
+  const requests = [];
+
+  if (EXPLICIT_MODES.has(explicitMode) || !shouldAutoUpsert(options)) {
+    const request = buildHousecallExportRequest(estimate, {
+      ...options,
+      mode: EXPLICIT_MODES.has(explicitMode) ? explicitMode : undefined,
+      jobId: context.jobId,
+      estimateId: context.estimateId,
+      estimateOptionId: context.estimateOptionId,
+      appointmentId: context.appointmentId,
+    });
+    requests.push(request);
+    return {
+      strategy: 'explicit',
+      context,
+      requests,
+    };
+  }
+
+  const candidateModes = [];
+  if (context.estimateId) candidateModes.push('update_estimate');
+  if (context.jobId) candidateModes.push('add_to_job');
+  candidateModes.push('create_estimate');
+
+  const seen = new Set();
+  for (const mode of candidateModes) {
+    if (seen.has(mode)) continue;
+    seen.add(mode);
+    requests.push(
+      buildHousecallExportRequest(estimate, {
+        ...options,
+        mode,
+        jobId: context.jobId,
+        estimateId: context.estimateId,
+        estimateOptionId: context.estimateOptionId,
+        appointmentId: context.appointmentId,
+      }),
+    );
+  }
+
+  return {
+    strategy: 'auto_upsert',
+    context,
+    requests,
   };
 }
 
