@@ -23,8 +23,14 @@ In the Doppler dashboard (or via CLI), set:
 
 | Secret | Description |
 |--------|-------------|
-| `CURSOR_API_KEY` | Cursor Cloud Agents API key from [Dashboard → Integrations](https://cursor.com/dashboard?tab=integrations). Format: `key_...` |
+| `CURSOR_API_KEY` | Cursor Cloud Agents API key from [Dashboard -> Integrations](https://cursor.com/dashboard?tab=integrations). Format: `key_...` |
 | `AGENT_ENV_REPO` | Full GitHub URL of this repo (e.g. `https://github.com/your-org/cursor-agent-env`). Used as the repo when launching the orchestrator agent. |
+| `BRIDGE_AUTH_TOKEN` | Required token for HTTP bridge endpoints (`/chat`, `/agent/:userId`). |
+| `SUBAGENT_REPO_ALLOWLIST` | Comma-separated repositories allowed for `SUBAGENT:` command execution. |
+| `LOCAL_ACTION_ALLOWLIST` | Comma-separated action IDs allowed for `LOCAL_ACTION:` command execution. |
+| `LOCAL_ACTION_ENDPOINT` | Local relay URL that executes `LOCAL_ACTION` requests. |
+| `LOCAL_ACTION_AUTH_TOKEN` | Optional bearer token sent to the local relay. |
+| `REDIS_URL` | Optional Redis URL for persistent agent mapping and rate limiting. |
 | `TELEGRAM_BOT_TOKEN` | Optional. From [@BotFather](https://t.me/BotFather). Omit to disable Telegram. |
 
 ## 4. Run the bridge
@@ -50,4 +56,4 @@ Doppler injects the variables into the process; the bridge reads `process.env.CU
 
 ## Alternatives
 
-If you don’t use Doppler, set the same env vars in your shell or in a `.env` file (and add `.env` to `.gitignore`). Never commit `.env` or API keys.
+If you do not use Doppler, set the same env vars in your shell or in a `.env` file (and add `.env` to `.gitignore`). Never commit `.env` or API keys.

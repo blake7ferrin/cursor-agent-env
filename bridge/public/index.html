@@ -6,34 +6,73 @@
   <title>Cursor Agent Chat</title>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 1rem; }
-    #log { border: 1px solid #ccc; min-height: 200px; padding: 0.5rem; margin-bottom: 0.5rem; overflow-y: auto; white-space: pre-wrap; }
-    #input { width: 100%; padding: 0.5rem; }
+    body { font-family: system-ui, sans-serif; max-width: 700px; margin: 0 auto; padding: 1rem; }
+    #log { border: 1px solid #ccc; min-height: 240px; padding: 0.5rem; margin-bottom: 0.5rem; overflow-y: auto; white-space: pre-wrap; }
+    .row { margin-bottom: 0.5rem; }
+    input { width: 100%; padding: 0.5rem; }
+    #input { margin-top: 0.25rem; }
     button { margin-top: 0.25rem; padding: 0.5rem 1rem; }
   </style>
 </head>
 <body>
   <h1>Cursor Agent Chat</h1>
   <p>Talk to your Cursor Cloud Agent (agent-env repo). Same backend as Telegram.</p>
+
+  <div class="row">
+    <label for="userId">User ID</label>
+    <input id="userId" type="text" placeholder="e.g. pwa:blake" />
+  </div>
+  <div class="row">
+    <label for="token">Bridge Token</label>
+    <input id="token" type="password" placeholder="BRIDGE_AUTH_TOKEN" />
+  </div>
+
   <div id="log"></div>
   <input id="input" type="text" placeholder="Type a message..." />
   <button id="send">Send</button>
+
   <script>
     const log = document.getElementById('log');
     const input = document.getElementById('input');
     const send = document.getElementById('send');
-    function append(msg) { log.appendChild(document.createTextNode(msg + '\n')); log.scrollTop = log.scrollHeight; }
-    send.addEventListener('click', async () => {
+    const tokenInput = document.getElementById('token');
+    const userIdInput = document.getElementById('userId');
+
+    const savedUserId = localStorage.getItem('bridge_user_id') || 'pwa:default';
+    userIdInput.value = savedUserId;
+
+    function append(msg) {
+      log.appendChild(document.createTextNode(msg + '\n'));
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async function sendMessage() {
       const text = input.value.trim();
+      const token = tokenInput.value.trim();
+      const userId = userIdInput.value.trim();
       if (!text) return;
+      if (!userId) {
+        append('Error: user_id is required.');
+        return;
+      }
+      if (!token) {
+        append('Error: bridge token is required.');
+        return;
+      }
+
+      localStorage.setItem('bridge_user_id', userId);
       input.value = '';
       append('You: ' + text);
       send.disabled = true;
+
       try {
         const res = await fetch('/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: 'pwa', message: text })
+          headers: {
+            'Content-Type': 'application/json',
+            'x-bridge-token': token,
+          },
+          body: JSON.stringify({ user_id: userId, message: text }),
         });
         const data = await res.json();
         if (data.error) append('Error: ' + data.error);
@@ -41,9 +80,12 @@
       } catch (e) {
         append('Error: ' + e.message);
       }
+
       send.disabled = false;
-    });
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') send.click(); });
+    }
+
+    send.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
   </script>
 </body>
 </html>

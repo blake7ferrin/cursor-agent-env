@@ -11,13 +11,33 @@ A GitHub repository that acts as the **persistent environment** (memory, skills,
 - **memory/YYYY-MM-DD.md** — Daily logs (append-only).
 - **tasks/schedule.md** — What to do when the scheduler runs (cron / time-context prompts).
 - **docs/orchestrator-protocol.md** — Format for SUBAGENT and LOCAL_ACTION so the bridge can parse and execute.
-- **bridge/** — Optional bridge service (Node.js) for Telegram and PWA; run with Doppler for secrets.
+- **bridge/** — Optional bridge service (Node.js) for Telegram and PWA; run with Doppler for secrets. Use it when you want Telegram or the PWA chat, or when you need the orchestrator protocol parsed by your own backend; Cursor’s native Slack + agent environment can cover many “control agents from elsewhere” needs without the bridge.
 
 ## Quick start (Cursor only)
 
 1. Clone this repo and open it in Cursor (or add it to your Cursor dashboard).
 2. Start a Cloud Agent on this repo from the Cursor dashboard.
 3. Chat; the agent will read and update MEMORY.md and the daily log. Continue on mobile at [cursor.com/agents](https://cursor.com/agents).
+
+## Cursor agent environment (dashboard)
+
+Cursor’s agent environment (dashboard) lets you:
+
+- **Secrets per environment** — Set API keys and env vars per agent environment in Cursor (Dashboard → your agent/environment), so you may not need Doppler or a bridge for secrets when using Cursor + Slack only.
+- **Terminal, desktop, git views** — In the dashboard you can see terminal output, git state, and other context for running agents.
+- **Slack** — Connect Slack (Dashboard → Integrations); then in any channel you can @Cursor with a prompt to launch or control agents. Use `help` and `settings` in Slack to configure default repo, branch, and model.
+
+So for **Cursor-only or Cursor + Slack**, the product already gives you environment secrets and a way to run and monitor agents without running the bridge.
+
+## Slack vs Telegram / PWA (bridge)
+
+| | **Slack (native)** | **Telegram / PWA (bridge)** |
+|--|--------------------|-----------------------------|
+| **What it is** | Launch and control agents from team channels; agents read the thread and act. | Dedicated chat with the *same* agent; the bridge keeps a conversation (user → agent id) and streams replies back. |
+| **Use case** | “Kick off a task from a thread,” “@Cursor fix this bug,” team visibility. | Personal or small-group chat with one persistent agent (memory, daily log, this repo’s “soul”). |
+| **Chat interface** | Task/thread-oriented: you send a prompt, agent runs, you see updates in Slack. Not a single long-running 1:1 chat. | True chat: you message the bot, get a reply in the same thread; the bridge maintains session and polls for the reply. |
+
+**Summary:** Slack doesn’t replace Telegram or the PWA if you want a **continuous chat** with one agent (same conversation, same memory). Slack is great for **triggering and controlling** agents from team chat. Use both if you want: Slack for team workflows, bridge + Telegram/PWA for personal chat with this repo’s agent.
 
 ## Quick start (Telegram or PWA)
 
