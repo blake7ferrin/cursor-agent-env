@@ -22,3 +22,34 @@ If **MEMORY.md** or **memory/YYYY-MM-DD.md** does not exist yet, create it with 
 
 - Follow project rules in `.cursor/rules/` and use skills in `.cursor/skills/` when they apply.
 - When outputting structured commands for an external bridge (e.g. launching subagents or local actions), use the format defined in **docs/orchestrator-protocol.md**.
+
+## Cursor Cloud specific instructions
+
+### Service overview
+
+The only runnable service is the **bridge** (`bridge/`), a Node.js/Express server that proxies messages between Telegram/PWA and the Cursor Cloud Agents API. See `bridge/README.md` for full details.
+
+### Running the bridge (dev mode)
+
+```bash
+cd bridge && CURSOR_API_KEY=<your-key> npm run dev
+```
+
+- `npm run dev` uses `node --watch server.js` for hot-reload.
+- The server listens on port **3000** (override with `PORT` env var).
+- `CURSOR_API_KEY` is **required** — the process exits immediately without it.
+- `TELEGRAM_BOT_TOKEN` is optional; Telegram integration is disabled when absent.
+
+### Endpoints to verify
+
+- `GET /health` — returns `{"ok":true}` (no auth needed; quickest smoke test).
+- `GET /` — serves the PWA chat UI from `bridge/public/index.html`.
+- `POST /chat` — forwards messages to the Cursor Agents API (requires a valid `CURSOR_API_KEY`).
+
+### Gotchas
+
+- There is no linter or test suite configured in this repo; `package.json` has only `start` and `dev` scripts.
+- The bridge uses ES Modules (`"type": "module"` in `package.json`). Use `import`/`export`, not `require`.
+- In-memory state (`store.js`) is lost on restart; this is by design for the current stage.
+- `AGENT_ENV_REPO` defaults to a placeholder URL. Set it to the actual repo (e.g. `https://github.com/blake7ferrin/cursor-agent-env`) or the Cursor API returns `Bad Request`.
+- `POST /chat` polls the Cursor API for up to 5 minutes. Cloud agents often take longer to boot and respond, so "Agent still running" timeouts are normal — the agent continues in the background.
