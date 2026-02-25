@@ -6,6 +6,10 @@
 
 import express from 'express';
 import TelegramBot from 'node-telegram-bot-api';
+import { spawn } from 'child_process';
+import { readFileSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import * as cursor from './cursor-api.js';
 import { createDispatcher } from './orchestrator-dispatch.js';
 import { createRateLimiter } from './rate-limiter.js';
@@ -202,6 +206,43 @@ app.post('/chat', requireBridgeAuth, applyRateLimit, async (req, res) => {
 app.get('/agent/:userId', requireBridgeAuth, async (req, res) => {
   const id = await getAgentId(req.params.userId);
   res.json({ agent_id: id });
+});
+
+// ----- HVAC catalog ingest -----
+
+const __dirnameBridge = dirname(fileURLToPath(import.meta.url));
+
+app.post('/ingest', requireBridgeAuth, async (req, res) => {
+  const only = req.body?.only ?? req.query?.only;
+  const args = only ? ['imports/ingest.js', '--only', only] : ['imports/ingest.js'];
+  return new Promise((resolve) => {
+    const child = spawn('node', args, { cwd: __dirnameBridge, stdio: ['ignore', 'pipe', 'pipe'] });
+    let out = '';
+    let err = '';
+    child.stdout.on('data', (d) => { out += d; });
+    child.stderr.on('data', (d) => { err += d; });
+    child.on('close', (code) => {
+      const reportPath = join(__dirnameBridge, 'imports', 'validation-report.json');
+      let report = null;
+      if (existsSync(reportPath)) {
+        try {
+          report = JSON.parse(readFileSync(reportPath, 'utf8'));
+        } catch (e) {
+          report = { error: 'Failed to read report', stderr: err };
+        }
+      } else {
+        report = { error: 'Ingest did not produce report', stdout: out, stderr: err };
+      }
+      res.status(code === 0 ? 200 : 422).json({
+        ok: code === 0,
+        exitCode: code,
+        report,
+        stdout: out.trim(),
+        stderr: err.trim() || undefined,
+      });
+      resolve();
+    });
+  });
 });
 
 // ----- Telegram -----
