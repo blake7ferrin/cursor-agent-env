@@ -47,6 +47,9 @@ Assuming bridge is running and `BRIDGE_AUTH_TOKEN` is available:
 4. Export to Housecall Pro CRM:
    - `POST /estimator/export/housecall`
    - Use `housecall.dry_run=true` before live export.
+   - Set `housecall.mode` for context-aware exports:
+     - `update_estimate` when estimate already exists
+     - `add_to_job` when adding a new estimate to an existing job
 
 ## Guardrails
 
@@ -55,6 +58,7 @@ Assuming bridge is running and `BRIDGE_AUTH_TOKEN` is available:
 - Highlight when discounts push achieved margin below the target.
 - Keep estimate assumptions visible in final output.
 - For Housecall export, run dry-run first and only live export once customer/job mapping is confirmed.
+- If only appointment context is known, resolve context first (`/integrations/housecall/resolve-context`) or provide `housecall.resolve_context=true` with an appointment lookup path template.
 
 ## Response style
 

@@ -9,7 +9,11 @@ import TelegramBot from 'node-telegram-bot-api';
 import * as cursor from './cursor-api.js';
 import { buildEstimate, renderEstimateHtml } from './estimator-engine.js';
 import { EstimatorValidationError } from './estimator-domain.js';
-import { buildHousecallExportRequest } from './housecall-mapper.js';
+import {
+  buildHousecallAppointmentLookupRequest,
+  buildHousecallExportRequest,
+  extractHousecallIdsFromObject,
+} from './housecall-mapper.js';
 import { getHousecallConfigSummary, housecallRequest, testHousecallConnection } from './housecall-pro.js';
 import {
   getEstimatorProfile,
@@ -98,6 +102,21 @@ function sanitizePreview(value, maxLength = 500) {
   if (value === undefined || value === null) return value;
   const text = typeof value === 'string' ? value : JSON.stringify(value);
   return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
+function asTrimmedString(value) {
+  if (value === undefined || value === null) return '';
+  const normalized = `${value}`.trim();
+  return normalized;
+}
+
+function mergeHousecallContext(primary = {}, fallback = {}) {
+  return {
+    jobId: asTrimmedString(primary.jobId || fallback.jobId),
+    estimateId: asTrimmedString(primary.estimateId || fallback.estimateId),
+    estimateOptionId: asTrimmedString(primary.estimateOptionId || fallback.estimateOptionId),
+    appointmentId: asTrimmedString(primary.appointmentId || fallback.appointmentId),
+  };
 }
 
 const applyRateLimit = createRateLimiter({
@@ -226,8 +245,8 @@ app.post('/integrations/housecall/request', requireBridgeAuth, applyRateLimit, a
   if (!path || typeof path !== 'string') {
     return res.status(400).json({ error: 'Missing path' });
   }
-  if (!path.startsWith('/v1/') && !path.startsWith('https://') && !path.startsWith('http://')) {
-    return res.status(400).json({ error: 'path must start with /v1/ or be an absolute URL' });
+  if (!/^\/v\d+\//.test(path) && !path.startsWith('https://') && !path.startsWith('http://')) {
+    return res.status(400).json({ error: 'path must start with /v<version>/ or be an absolute URL' });
   }
   try {
     const result = await housecallRequest({
@@ -247,6 +266,33 @@ app.post('/integrations/housecall/request', requireBridgeAuth, applyRateLimit, a
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message || 'Housecall request failed' });
+  }
+});
+
+app.post('/integrations/housecall/resolve-context', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  try {
+    const lookupRequest = buildHousecallAppointmentLookupRequest({
+      appointment_id: req.body?.appointment_id ?? req.body?.appointmentId,
+      appointment_lookup_path: req.body?.appointment_lookup_path ?? req.body?.appointmentLookupPath,
+      appointment_lookup_method: req.body?.appointment_lookup_method ?? req.body?.appointmentLookupMethod,
+      appointment_lookup_query: req.body?.appointment_lookup_query ?? req.body?.appointmentLookupQuery,
+    });
+    const lookupResponse = await housecallRequest({
+      method: lookupRequest.method,
+      path: lookupRequest.path,
+      query: lookupRequest.query,
+    });
+    const extracted = extractHousecallIdsFromObject(lookupResponse.body);
+    return res.status(lookupResponse.ok ? 200 : 502).json({
+      ok: lookupResponse.ok,
+      status: lookupResponse.status,
+      lookup_request: lookupRequest,
+      extracted_context: extracted,
+      raw_body: lookupResponse.body,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message || 'Housecall context resolution failed' });
   }
 });
 
@@ -354,23 +400,82 @@ app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, async
     }
 
     const housecallOpts = req.body?.housecall && typeof req.body.housecall === 'object' ? req.body.housecall : {};
+    const directContext = {
+      jobId: asTrimmedString(housecallOpts.job_id ?? housecallOpts.jobId),
+      estimateId: asTrimmedString(housecallOpts.estimate_id ?? housecallOpts.estimateId),
+      estimateOptionId: asTrimmedString(
+        housecallOpts.estimate_option_id ?? housecallOpts.estimateOptionId,
+      ),
+      appointmentId: asTrimmedString(housecallOpts.appointment_id ?? housecallOpts.appointmentId),
+    };
+    let resolvedContext = mergeHousecallContext(directContext, {});
+    let lookup = null;
+
+    const shouldLookupFromAppointment =
+      !!resolvedContext.appointmentId &&
+      !resolvedContext.jobId &&
+      !resolvedContext.estimateId &&
+      (housecallOpts.resolve_context === true ||
+        housecallOpts.resolveContext === true ||
+        housecallOpts.appointment_lookup_path ||
+        housecallOpts.appointmentLookupPath ||
+        process.env.HOUSECALL_PRO_APPOINTMENT_LOOKUP_PATH);
+
+    if (shouldLookupFromAppointment) {
+      const lookupRequest = buildHousecallAppointmentLookupRequest({
+        appointment_id: resolvedContext.appointmentId,
+        appointment_lookup_path: housecallOpts.appointment_lookup_path ?? housecallOpts.appointmentLookupPath,
+        appointment_lookup_method:
+          housecallOpts.appointment_lookup_method ?? housecallOpts.appointmentLookupMethod,
+        appointment_lookup_query:
+          housecallOpts.appointment_lookup_query ?? housecallOpts.appointmentLookupQuery,
+      });
+      const lookupResponse = await housecallRequest({
+        method: lookupRequest.method,
+        path: lookupRequest.path,
+        query: lookupRequest.query,
+      });
+      lookup = {
+        ok: lookupResponse.ok,
+        status: lookupResponse.status,
+        request: lookupRequest,
+        body_preview: sanitizePreview(lookupResponse.body, 1500),
+      };
+      if (lookupResponse.ok && lookupResponse.body && typeof lookupResponse.body === 'object') {
+        const extractedContext = extractHousecallIdsFromObject(lookupResponse.body);
+        resolvedContext = mergeHousecallContext(resolvedContext, extractedContext);
+      }
+    }
+
     const requestPayload = buildHousecallExportRequest(estimate, {
       endpoint: housecallOpts.endpoint,
       method: housecallOpts.method,
+      mode: housecallOpts.mode,
       customerId: housecallOpts.customer_id ?? housecallOpts.customerId,
-      jobId: housecallOpts.job_id ?? housecallOpts.jobId,
+      jobId: resolvedContext.jobId,
+      estimateId: resolvedContext.estimateId,
+      estimateOptionId: resolvedContext.estimateOptionId,
+      appointmentId: resolvedContext.appointmentId,
       optionName: housecallOpts.option_name ?? housecallOpts.optionName,
       note: housecallOpts.note,
       payloadOverride: housecallOpts.payload_override ?? housecallOpts.payloadOverride,
+      createEstimatePath: housecallOpts.create_estimate_path ?? housecallOpts.createEstimatePath,
+      addToJobPath: housecallOpts.add_to_job_path ?? housecallOpts.addToJobPath,
+      updateEstimatePath: housecallOpts.update_estimate_path ?? housecallOpts.updateEstimatePath,
+      addOptionNotePath: housecallOpts.add_option_note_path ?? housecallOpts.addOptionNotePath,
     });
 
     if (housecallOpts.dry_run === true || housecallOpts.dryRun === true) {
       return res.json({
         dry_run: true,
         estimate,
+        resolved_context: requestPayload.context,
+        lookup,
         housecall_request: {
+          mode: requestPayload.mode,
           method: requestPayload.method,
           path: requestPayload.path,
+          path_template: requestPayload.path_template,
           payload: requestPayload.payload,
         },
       });
@@ -384,9 +489,13 @@ app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, async
 
     return res.status(upstream.ok ? 200 : 502).json({
       estimate,
+      resolved_context: requestPayload.context,
+      lookup,
       housecall_request: {
+        mode: requestPayload.mode,
         method: requestPayload.method,
         path: requestPayload.path,
+        path_template: requestPayload.path_template,
         payload_preview: sanitizePreview(requestPayload.payload, 2000),
       },
       housecall_response: {

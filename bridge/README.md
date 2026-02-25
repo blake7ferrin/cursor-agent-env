@@ -28,6 +28,10 @@ Bridge service that connects Telegram and a simple PWA to the Cursor Cloud Agent
    - `HOUSECALL_PRO_CLIENT_ID`, `HOUSECALL_PRO_CLIENT_SECRET`, `HOUSECALL_PRO_REFRESH_TOKEN` — OAuth refresh credentials for automatic access-token renewal.
    - `HOUSECALL_PRO_TOKEN_URL` — optional OAuth token endpoint override (default: `<HOUSECALL_PRO_API_BASE>/oauth/token`).
    - `HOUSECALL_PRO_CREATE_ESTIMATE_PATH` — optional estimate create endpoint override (default: `/v1/estimates`).
+   - `HOUSECALL_PRO_ADD_TO_JOB_ESTIMATE_PATH` — optional add-to-job estimate path template (default: `/v1/jobs/{job_id}/estimates`).
+   - `HOUSECALL_PRO_UPDATE_ESTIMATE_PATH` — optional update-estimate path template (default: `/v1/estimates/{estimate_id}`).
+   - `HOUSECALL_PRO_ADD_OPTION_NOTE_PATH` — optional estimate option note path template (default: `/v1/estimates/{estimate_id}/options/{estimate_option_id}/notes`).
+   - `HOUSECALL_PRO_APPOINTMENT_LOOKUP_PATH` — optional appointment lookup path template used for context resolution, e.g. `/v1/schedule/{appointment_id}`.
    - `HOUSECALL_PRO_TEST_PATH` — optional test endpoint for `/integrations/housecall/test` (default: `/v1/customers`).
    - `HOUSECALL_PRO_TIMEOUT_MS` — timeout for Housecall API calls (default: `30000`).
    - `TELEGRAM_BOT_TOKEN` — (optional) from [@BotFather](https://t.me/BotFather) if you want Telegram.
@@ -63,6 +67,7 @@ Default port: 3000. Set `PORT` to change it.
 - `GET /integrations/housecall/config` — Returns Housecall auth mode summary (no secrets).
 - `POST /integrations/housecall/test` — Runs a lightweight authenticated test call to Housecall.
 - `POST /integrations/housecall/request` — Debug endpoint for direct Housecall API calls.
+- `POST /integrations/housecall/resolve-context` — Lookup appointment context and extract linked IDs (job/estimate/option).
 
 ## HVAC estimator MVP
 
@@ -184,12 +189,79 @@ curl -X POST http://localhost:3000/estimator/export/housecall \
   }'
 ```
 
+### 5) Update an existing estimate (already scheduled / already created)
+
+```bash
+curl -X POST http://localhost:3000/estimator/export/housecall \
+  -H "Content-Type: application/json" \
+  -H "x-bridge-token: $BRIDGE_AUTH_TOKEN" \
+  -d '{
+    "user_id": "pwa:blake",
+    "customer": { "name": "Jane Smith", "housecall_customer_id": "cust_123" },
+    "project": { "summary": "Replace upstairs heat pump", "housecall_estimate_id": "est_789" },
+    "selections": [{ "sku": "HP-3T-16", "quantity": 1 }],
+    "housecall": {
+      "mode": "update_estimate",
+      "estimate_id": "est_789",
+      "dry_run": true
+    }
+  }'
+```
+
+### 6) Add a new estimate onto an existing job
+
+```bash
+curl -X POST http://localhost:3000/estimator/export/housecall \
+  -H "Content-Type: application/json" \
+  -H "x-bridge-token: $BRIDGE_AUTH_TOKEN" \
+  -d '{
+    "user_id": "pwa:blake",
+    "customer": { "name": "Jane Smith", "housecall_customer_id": "cust_123" },
+    "project": { "summary": "Add zoning upgrade option", "housecall_job_id": "job_456" },
+    "selections": [{ "sku": "HP-3T-16", "quantity": 1 }],
+    "housecall": {
+      "mode": "add_to_job",
+      "job_id": "job_456",
+      "dry_run": true
+    }
+  }'
+```
+
+### 7) Resolve context from an appointment before export
+
+```bash
+curl -X POST http://localhost:3000/integrations/housecall/resolve-context \
+  -H "Content-Type: application/json" \
+  -H "x-bridge-token: $BRIDGE_AUTH_TOKEN" \
+  -d '{
+    "appointment_id": "apt_123",
+    "appointment_lookup_path": "/v1/schedule/{appointment_id}"
+  }'
+```
+
+You can also do this inside export by providing:
+
+```json
+{
+  "housecall": {
+    "appointment_id": "apt_123",
+    "resolve_context": true,
+    "appointment_lookup_path": "/v1/schedule/{appointment_id}"
+  }
+}
+```
+
 ### Notes on payload mapping
 
 - `POST /estimator/export/housecall` creates a best-effort payload from the estimator output.
 - If your Housecall account expects a different schema, use:
   - `housecall.endpoint` to override the path
   - `housecall.payload_override` to send your exact JSON body
+- Supported `housecall.mode` values:
+  - `create_estimate` (default)
+  - `add_to_job` (requires `job_id`)
+  - `update_estimate` (requires `estimate_id`)
+  - `add_option_note` (requires `estimate_id` + `estimate_option_id`)
 - This lets you move forward immediately while we tune field mapping to your exact Housecall API contract.
 
 ## Telegram
