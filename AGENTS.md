@@ -32,12 +32,12 @@ The only runnable service is the **bridge** (`bridge/`), a Node.js/Express serve
 ### Running the bridge (dev mode)
 
 ```bash
-cd bridge && CURSOR_API_KEY=<your-key> npm run dev
+cd bridge && CURSOR_API_KEY=<your-key> BRIDGE_AUTH_TOKEN=<token> npm run dev
 ```
 
 - `npm run dev` uses `node --watch server.js` for hot-reload.
 - The server listens on port **3000** (override with `PORT` env var).
-- `CURSOR_API_KEY` is **required** — the process exits immediately without it.
+- Both `CURSOR_API_KEY` and `BRIDGE_AUTH_TOKEN` are **required** — the process exits immediately without either.
 - `TELEGRAM_BOT_TOKEN` is optional; Telegram integration is disabled when absent.
 
 ### Endpoints to verify
@@ -48,7 +48,7 @@ cd bridge && CURSOR_API_KEY=<your-key> npm run dev
 
 ### Gotchas
 
-- There is no linter or test suite configured in this repo; `package.json` has only `start` and `dev` scripts.
+- There is no linter configured. Unit tests exist: run `cd bridge && npm test` (uses `node --test` on `bridge/test/`).
 - The bridge uses ES Modules (`"type": "module"` in `package.json`). Use `import`/`export`, not `require`.
 - In-memory state (`store.js`) is lost on restart; this is by design for the current stage.
 - `AGENT_ENV_REPO` defaults to a placeholder URL. Set it to the actual repo (e.g. `https://github.com/blake7ferrin/cursor-agent-env`) or the Cursor API returns `Bad Request`.
