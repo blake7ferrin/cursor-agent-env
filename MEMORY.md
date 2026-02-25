@@ -30,4 +30,5 @@ Durable facts, preferences, and decisions. The agent updates this file when the 
 - Upload raw files to `bridge/imports/incoming/`.
 - Run `npm run ingest` in `bridge/` (or `POST /ingest` with bridge auth) to validate and build catalog output.
 - Canonical run uses `--only CLEAN,ChangeOut_Pricebook` for the cleaned equipment sheet plus changeout pricebook.
+- Preferred source profile is now `--profile preferred`: Day & Night Google Sheet XLSX + AC Pro clean/changeout CSVs, while Arizona/A2L/installer-pricing PDFs are tracked as manual reference-only files.
 - Output files: `bridge/imports/catalog/equipment-and-adders.json` and `bridge/imports/validation-report.json`.
