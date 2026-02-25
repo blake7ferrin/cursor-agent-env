@@ -10,3 +10,7 @@ Durable facts, preferences, and decisions. The agent updates this file when the 
 - **Slack vs bridge:** Slack is for *controlling* agents from team chat (task/thread-oriented). Telegram and the PWA (bridge) provide a *continuous chat* with one agent (same conversation, same memory). Slack does not replace Telegram/PWA for that use case; they can be used together (Slack for team, bridge for personal chat).
 - **User is Cursor-only for now** (no bridge/Telegram/PWA in use yet).
 - **Bridge baseline hardening implemented (2026-02-25):** HTTP auth token required, explicit `user_id` required, allowlisted orchestrator dispatch (`SUBAGENT`/`LOCAL_ACTION`), and optional Redis-backed persistence/rate limiting via `REDIS_URL`.
+
+## Business automation direction
+
+- User is exploring an HVAC estimator agent that can use full cost inputs (parts/equipment pricing, labor, overhead, profit targets), ingest photos/chat context, and produce CRM estimates or generated estimate PDFs, potentially replacing a traditional static pricebook.
