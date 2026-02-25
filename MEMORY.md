@@ -19,3 +19,4 @@ Durable facts, preferences, and decisions. The agent updates this file when the 
 - Housecall workflow must support both updating existing scheduled estimates and adding new estimate options to existing jobs (not just creating brand-new estimates).
 - Housecall export now supports auto-upsert target routing (estimate -> appointment context -> job -> create fallback) to reduce tech decision-making in the field.
 - Bluon API evaluation (2026-02-25): strong fit for diagnostics/technical enrichment (model/parts/manuals/tools/warranty/nameplate), but not a primary source for estimate pricing because published API lacks cost/MSRP/labor/overhead/margin fields.
+- User’s primary residential replacement brands are **AC Pro** and **Day & Night**; estimator automation should prioritize prebuilt options/templates for these brands first, with other brands handled via quote-assist mode.
