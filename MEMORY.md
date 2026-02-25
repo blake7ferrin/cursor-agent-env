@@ -18,6 +18,7 @@ Durable facts, preferences, and decisions. The agent updates this file when the 
 - User CRM is **Housecall Pro**; estimator workflows should prioritize direct Housecall export over generic CRM assumptions.
 - Housecall workflow must support both updating existing scheduled estimates and adding new estimate options to existing jobs (not just creating brand-new estimates).
 - Housecall export now supports auto-upsert target routing (estimate -> appointment context -> job -> create fallback) to reduce tech decision-making in the field.
+- Housecall auth env aliases (2026-02-25): bridge accepts both `HOUSECALL_PRO_API_KEY` and `HCP_API_KEY` for static bearer auth; config summary exposes `apiKeySource` for debugging.
 - Bluon API evaluation (2026-02-25): strong fit for diagnostics/technical enrichment (model/parts/manuals/tools/warranty/nameplate), but not a primary source for estimate pricing because published API lacks cost/MSRP/labor/overhead/margin fields.
 - User’s primary residential replacement brands are **AC Pro** and **Day & Night**; estimator automation should prioritize prebuilt options/templates for these brands first, with other brands handled via quote-assist mode.
 - User has full pricebooks/equipment brochures/troubleshooting manuals for AC Pro and Day & Night, with potential access to more brand data; desired workflow is data-plate/photo-led residential automation plus assisted quote workflow for oddball/commercial/other-brand jobs.
