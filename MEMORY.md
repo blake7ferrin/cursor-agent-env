@@ -15,3 +15,4 @@ Durable facts, preferences, and decisions. The agent updates this file when the 
 
 - User is exploring an HVAC estimator agent that can use full cost inputs (parts/equipment pricing, labor, overhead, profit targets), ingest photos/chat context, and produce CRM estimates or generated estimate PDFs, potentially replacing a traditional static pricebook.
 - Estimator MVP now exists in `bridge/` (2026-02-25): per-user pricing config + catalog storage, deterministic estimate calculation endpoint, printable HTML output for PDF workflows, and a new `.cursor/skills/hvac-estimator` skill for estimator operation.
+- User CRM is **Housecall Pro**; estimator workflows should prioritize direct Housecall export over generic CRM assumptions.
