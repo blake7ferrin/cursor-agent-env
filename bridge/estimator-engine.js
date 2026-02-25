@@ -171,6 +171,11 @@ export function buildEstimate(input = {}) {
     'targetGrossMargin',
     { max: 0.95, defaultValue: config.targetGrossMargin },
   );
+  const minimumMarginTarget = normalizeRate(
+    adjustments.minimumGrossMarginOverride ?? config.minimumGrossMargin ?? targetMargin,
+    'minimumGrossMargin',
+    { max: 0.95, defaultValue: config.minimumGrossMargin ?? targetMargin },
+  );
   const taxRate = normalizeRate(adjustments.taxRate ?? config.defaultTaxRate, 'taxRate', {
     max: 1,
     defaultValue: config.defaultTaxRate,
@@ -250,8 +255,17 @@ export function buildEstimate(input = {}) {
   const totalCost = lineRawCost + fixedCosts;
   const recommendedSubtotal = totalCost / (1 - targetMargin);
   const discountFromPercent = recommendedSubtotal * discountPercent;
-  const discountTotal = Math.min(recommendedSubtotal, discountFromPercent + discountAmount);
-  const subtotalAfterDiscount = recommendedSubtotal - discountTotal;
+  let discountTotal = Math.min(recommendedSubtotal, discountFromPercent + discountAmount);
+  let subtotalAfterDiscount = recommendedSubtotal - discountTotal;
+  const minimumAllowedSubtotal = totalCost / (1 - minimumMarginTarget);
+  const autoRaiseToMinimumGrossMargin = adjustments.autoRaiseToMinimumGrossMargin === true;
+  let adjustedToMinimumGrossMargin = false;
+  if (subtotalAfterDiscount < minimumAllowedSubtotal && autoRaiseToMinimumGrossMargin) {
+    subtotalAfterDiscount = minimumAllowedSubtotal;
+    discountTotal = Math.max(0, recommendedSubtotal - subtotalAfterDiscount);
+    adjustedToMinimumGrossMargin = true;
+  }
+  const belowMinimumGrossMargin = subtotalAfterDiscount < minimumAllowedSubtotal - 0.01;
 
   const taxableRatio =
     lineItems.length === 0
@@ -272,6 +286,22 @@ export function buildEstimate(input = {}) {
   if (achievedGrossMargin < targetMargin) {
     alerts.push('Estimated gross margin is below target after discounts.');
   }
+  if (belowMinimumGrossMargin) {
+    alerts.push('Estimated gross margin is below configured minimum guardrail.');
+  }
+  if (adjustedToMinimumGrossMargin) {
+    alerts.push('Subtotal was automatically raised to satisfy minimum gross margin guardrail.');
+  }
+  if (config.enforceMinimumGrossMargin && belowMinimumGrossMargin && adjustments.allowMarginOverride !== true) {
+    throw new EstimatorValidationError(
+      'Estimate subtotal is below minimum gross margin guardrail. Set allowMarginOverride=true or adjust pricing.',
+      {
+        minimumAllowedSubtotal: roundMoney(minimumAllowedSubtotal),
+        achievedGrossMargin: roundRate(achievedGrossMargin),
+        minimumGrossMarginTarget: roundRate(minimumMarginTarget),
+      },
+    );
+  }
 
   for (const line of lineItems) {
     delete line._raw;
@@ -290,6 +320,8 @@ export function buildEstimate(input = {}) {
       overheadRate: roundRate(config.overheadRate),
       contingencyRate: roundRate(config.contingencyRate),
       targetGrossMargin: roundRate(targetMargin),
+      minimumGrossMargin: roundRate(minimumMarginTarget),
+      enforceMinimumGrossMargin: Boolean(config.enforceMinimumGrossMargin),
       defaultTaxRate: roundRate(taxRate),
       paymentTerms: config.paymentTerms,
     },
@@ -303,14 +335,22 @@ export function buildEstimate(input = {}) {
       recommendedSubtotal: roundMoney(recommendedSubtotal),
       discountTotal: roundMoney(discountTotal),
       subtotalAfterDiscount: roundMoney(subtotalAfterDiscount),
+      minimumAllowedSubtotal: roundMoney(minimumAllowedSubtotal),
       taxableSubtotal: roundMoney(taxableSubtotal),
       taxRate: roundRate(taxRate),
       taxTotal: roundMoney(taxTotal),
       grandTotal: roundMoney(grandTotal),
       grossProfit: roundMoney(grossProfit),
       achievedGrossMargin: roundRate(achievedGrossMargin),
+      minimumGrossMarginTarget: roundRate(minimumMarginTarget),
     },
     alerts,
+    guardrails: {
+      autoRaiseToMinimumGrossMargin,
+      adjustedToMinimumGrossMargin,
+      belowMinimumGrossMargin,
+      allowMarginOverride: adjustments.allowMarginOverride === true,
+    },
     crm_payload: {
       estimateId: `est_${Date.now()}`,
       customerName: input.customer?.name || '',

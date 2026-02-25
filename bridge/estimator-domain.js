@@ -6,6 +6,8 @@ const DEFAULT_CONFIG = Object.freeze({
   overheadRate: 0.18,
   contingencyRate: 0,
   targetGrossMargin: 0.5,
+  minimumGrossMargin: 0.4,
+  enforceMinimumGrossMargin: false,
   defaultTaxRate: 0,
   defaultPermitFee: 0,
   defaultTripCharge: 0,
@@ -60,6 +62,32 @@ function asPositiveNumber(value, fieldName, options = {}) {
   return numeric;
 }
 
+function normalizeAttributes(attributes) {
+  if (attributes === undefined || attributes === null) return {};
+  if (typeof attributes !== 'object' || Array.isArray(attributes)) {
+    throw new EstimatorValidationError('catalog item attributes must be an object');
+  }
+
+  const normalized = {};
+  for (const [rawKey, value] of Object.entries(attributes)) {
+    const key = `${rawKey}`.trim();
+    if (!key) continue;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed) normalized[key] = trimmed.slice(0, 200);
+      continue;
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      normalized[key] = value;
+      continue;
+    }
+    if (typeof value === 'boolean') {
+      normalized[key] = value;
+    }
+  }
+  return normalized;
+}
+
 export function normalizeRate(value, fieldName, options = {}) {
   const { defaultValue = 0, max = 0.95 } = options;
   if (value === undefined || value === null || value === '') return defaultValue;
@@ -108,6 +136,12 @@ export function normalizeEstimatorConfig(input = {}, options = {}) {
   }
   if (hasOwn(source, 'targetGrossMargin')) {
     next.targetGrossMargin = normalizeRate(source.targetGrossMargin, 'targetGrossMargin', { max: 0.95 });
+  }
+  if (hasOwn(source, 'minimumGrossMargin')) {
+    next.minimumGrossMargin = normalizeRate(source.minimumGrossMargin, 'minimumGrossMargin', { max: 0.95 });
+  }
+  if (hasOwn(source, 'enforceMinimumGrossMargin')) {
+    next.enforceMinimumGrossMargin = Boolean(source.enforceMinimumGrossMargin);
   }
   if (hasOwn(source, 'defaultTaxRate')) {
     next.defaultTaxRate = normalizeRate(source.defaultTaxRate, 'defaultTaxRate', { max: 1 });
@@ -161,6 +195,7 @@ export function normalizeCatalogItem(item = {}) {
   const notes = item.notes
     ? asTrimmedString(item.notes, 'catalog item notes', { maxLength: 500, allowEmpty: true })
     : '';
+  const attributes = normalizeAttributes(item.attributes);
 
   return {
     sku,
@@ -171,6 +206,7 @@ export function normalizeCatalogItem(item = {}) {
     taxable,
     features,
     notes,
+    attributes,
   };
 }
 

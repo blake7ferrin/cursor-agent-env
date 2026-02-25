@@ -62,6 +62,7 @@ Default port: 3000. Set `PORT` to change it.
 - `PUT /estimator/config` — Save pricing assumptions for one user. Body: `{ "user_id": "...", "config": { ... } }`.
 - `PUT /estimator/catalog` — Save/replace parts + equipment catalog. Body: `{ "user_id": "...", "items": [ ... ] }`.
 - `GET /estimator/profile` — Read current estimator config + catalog (`user_id` query param or `x-user-id` header).
+- `POST /estimator/changeout-plan` — Intake-driven residential changeout planner (lane classification + questions + recommended options + optional estimate preview).
 - `POST /estimator/estimate` — Generate deterministic estimate totals and printable HTML. Body: `{ "user_id": "...", "selections": [ ... ], "manual_items": [ ... ], "customer": { ... }, "project": { ... }, "adjustments": { ... }, "output": "json|html" }`.
 - `POST /estimator/export/housecall` — Build and send estimate to Housecall Pro. Supports dry-run and payload override.
 - `GET /integrations/housecall/config` — Returns Housecall auth mode summary (no secrets).
@@ -75,6 +76,7 @@ The bridge now includes a first-pass HVAC estimator with:
 
 - Deterministic pricing math (not freeform LLM arithmetic)
 - Configurable labor burden, overhead, and target gross margin
+- Optional minimum-margin guardrail (`minimumGrossMargin`, `enforceMinimumGrossMargin`)
 - Stored catalog items (equipment/parts/services) per `user_id`
 - Estimate output as JSON and print-ready HTML (can be saved as PDF in browser)
 
@@ -118,6 +120,56 @@ curl -X PUT http://localhost:3000/estimator/catalog \
     ]
   }'
 ```
+
+Catalog items can include optional `attributes` for smarter intake matching:
+
+```json
+{
+  "sku": "ACPRO-HP-4T-18",
+  "name": "AC Pro 4 Ton Split Heat Pump 18 SEER2",
+  "itemType": "equipment",
+  "unitCost": 4200,
+  "defaultLaborHours": 7,
+  "attributes": {
+    "brand": "AC Pro",
+    "tonnage": 4,
+    "seer2": 18,
+    "systemType": "split_heat_pump",
+    "phase": "single",
+    "vendorContact": "AC Pro Counter (555-100-2000)"
+  }
+}
+```
+
+### Example: run residential changeout intake plan
+
+```bash
+curl -X POST http://localhost:3000/estimator/changeout-plan \
+  -H "Content-Type: application/json" \
+  -H "x-bridge-token: $BRIDGE_AUTH_TOKEN" \
+  -d '{
+    "user_id": "pwa:blake",
+    "customer": { "name": "Jane Smith" },
+    "project": { "summary": "Replace split heat pump system" },
+    "intake": {
+      "requestedBrand": "AC Pro",
+      "tonnage": 4,
+      "systemType": "split_heat_pump",
+      "phase": "single",
+      "selectedEquipmentSku": "ACPRO-HP-4T-18",
+      "installConditions": {
+        "tightAttic": true
+      }
+    }
+  }'
+```
+
+`changeout-plan` returns:
+- `lane` (`auto_ready`, `needs_selection`, `needs_questions`, `awaiting_vendor_quote`, `manual_review`)
+- `follow_up_questions`
+- `recommended_options`
+- `complexity_adders`
+- `draft_estimate_request` + `estimate_preview` when ready
 
 ### Example: generate estimate
 

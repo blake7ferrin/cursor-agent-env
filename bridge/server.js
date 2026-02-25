@@ -7,6 +7,7 @@
 import express from 'express';
 import TelegramBot from 'node-telegram-bot-api';
 import * as cursor from './cursor-api.js';
+import { buildChangeoutPlan } from './estimator-changeout.js';
 import { buildEstimate, renderEstimateHtml } from './estimator-engine.js';
 import { EstimatorValidationError } from './estimator-domain.js';
 import {
@@ -352,6 +353,29 @@ app.get('/estimator/profile', requireBridgeAuth, async (req, res) => {
       config: profile.config,
       catalog_count: profile.catalog.length,
       catalog: profile.catalog,
+    });
+  } catch (err) {
+    return handleEstimatorError(err, res);
+  }
+});
+
+app.post('/estimator/changeout-plan', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  const userId = extractUserId(req);
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing user_id' });
+  }
+  try {
+    const profile = await getEstimatorProfile(userId);
+    const plan = buildChangeoutPlan({
+      profile,
+      intake: req.body?.intake,
+      customer: req.body?.customer,
+      project: req.body?.project,
+      limit: req.body?.limit,
+    });
+    return res.json({
+      user_id: userId,
+      plan,
     });
   } catch (err) {
     return handleEstimatorError(err, res);

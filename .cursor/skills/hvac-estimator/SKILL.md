@@ -41,10 +41,13 @@ Assuming bridge is running and `BRIDGE_AUTH_TOKEN` is available:
    - `PUT /estimator/config`
 2. Save/update catalog:
    - `PUT /estimator/catalog`
-3. Create estimate:
+3. Run intake planner:
+   - `POST /estimator/changeout-plan`
+   - Use planner lane result to decide if estimate can be auto-built or needs follow-up.
+4. Create estimate:
    - `POST /estimator/estimate`
    - Use `output: "html"` for a printable document.
-4. Export to Housecall Pro CRM:
+5. Export to Housecall Pro CRM:
    - `POST /estimator/export/housecall`
    - Use `housecall.dry_run=true` before live export.
    - Prefer `housecall.auto_upsert=true` (or `housecall.mode="auto_upsert"`) so the bridge picks the best target automatically.
@@ -60,6 +63,11 @@ Assuming bridge is running and `BRIDGE_AUTH_TOKEN` is available:
 - Keep estimate assumptions visible in final output.
 - For Housecall export, run dry-run first and only live export once customer/job mapping is confirmed.
 - If only appointment context is known, resolve context first (`/integrations/housecall/resolve-context`) or provide `housecall.resolve_context=true` with an appointment lookup path template.
+- For residential replacement intake, prioritize `changeout-plan` lane automation:
+  - `auto_ready` -> build + export
+  - `needs_selection` -> ask user to pick recommended option SKU
+  - `awaiting_vendor_quote` -> collect distributor pricing and re-run
+  - `manual_review` -> escalate commercial/high-complexity scopes
 
 ## Response style
 
