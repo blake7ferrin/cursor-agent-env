@@ -145,3 +145,40 @@ test('changeout plan returns needs_questions when core sizing fields missing', (
   assert.equal(plan.lane, 'needs_questions');
   assert.equal(plan.missing_fields.includes('tonnage'), true);
 });
+
+test('changeout plan maps edge-case adders to catalog when available', () => {
+  const profile = createProfile();
+  profile.catalog.push({
+    sku: 'ADDER-CRANE-CATALOG',
+    name: 'Crane and rigging coordination adder',
+    itemType: 'service',
+    unitCost: 1250,
+    defaultLaborHours: 1.5,
+    taxable: false,
+    features: [],
+    notes: 'Use when crane is required for roof access.',
+    attributes: {
+      sourceCategory: 'Changeout Adders',
+      sourceSubcategory: 'Access',
+    },
+  });
+
+  const plan = buildChangeoutPlan({
+    profile,
+    intake: {
+      requestedBrand: 'AC Pro',
+      tonnage: 4,
+      systemType: 'split_heat_pump',
+      phase: 'single',
+      selectedEquipmentSku: 'ACPRO-HP-4T-18',
+      pricingKnown: true,
+      installConditions: {
+        craneRequired: true,
+      },
+    },
+  });
+
+  assert.equal(plan.complexity_adders.length >= 1, true);
+  assert.equal(plan.complexity_adders[0].code, 'ADDER-CRANE-CATALOG');
+  assert.equal(plan.complexity_adders_resolution[0].source, 'catalog');
+});

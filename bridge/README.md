@@ -63,7 +63,7 @@ Default port: 3000. Set `PORT` to change it.
 - `PUT /estimator/config` — Save pricing assumptions for one user. Body: `{ "user_id": "...", "config": { ... } }`.
 - `PUT /estimator/catalog` — Save/replace parts + equipment catalog. Body: `{ "user_id": "...", "items": [ ... ] }`.
 - `GET /estimator/profile` — Read current estimator config + catalog (`user_id` query param or `x-user-id` header).
-- `POST /estimator/changeout-plan` — Intake-driven residential changeout planner (lane classification + questions + recommended options + optional estimate preview).
+- `POST /estimator/changeout-plan` — Intake-driven residential changeout planner (lane classification + questions + recommended options + optional estimate preview). By default, it auto-loads the ingested `preferred` profile catalog at runtime.
 - `POST /estimator/estimate` — Generate deterministic estimate totals and printable HTML. Body: `{ "user_id": "...", "selections": [ ... ], "manual_items": [ ... ], "customer": { ... }, "project": { ... }, "adjustments": { ... }, "output": "json|html" }`.
 - `POST /estimator/export/housecall` — Build and send estimate to Housecall Pro. Supports dry-run and payload override.
 - `GET /integrations/housecall/config` — Returns Housecall auth mode summary (no secrets).
@@ -150,6 +150,9 @@ curl -X POST http://localhost:3000/estimator/changeout-plan \
   -H "x-bridge-token: $BRIDGE_AUTH_TOKEN" \
   -d '{
     "user_id": "pwa:blake",
+    "catalog_profile": "preferred",
+    "use_imported_catalog": true,
+    "include_user_catalog": true,
     "customer": { "name": "Jane Smith" },
     "project": { "summary": "Replace split heat pump system" },
     "intake": {
@@ -170,7 +173,9 @@ curl -X POST http://localhost:3000/estimator/changeout-plan \
 - `follow_up_questions`
 - `recommended_options`
 - `complexity_adders`
+- `complexity_adders_resolution` (`catalog` vs `fallback` per edge-case adder)
 - `draft_estimate_request` + `estimate_preview` when ready
+- `catalog_runtime` (which profile was loaded/refreshed and effective catalog counts)
 
 ### Example: generate estimate
 

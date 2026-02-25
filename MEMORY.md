@@ -32,3 +32,5 @@ Durable facts, preferences, and decisions. The agent updates this file when the 
 - Canonical run uses `--only CLEAN,ChangeOut_Pricebook` for the cleaned equipment sheet plus changeout pricebook.
 - Preferred source profile is now `--profile preferred`: Day & Night Google Sheet XLSX + AC Pro clean/changeout CSVs, while Arizona/A2L/installer-pricing PDFs are tracked as manual reference-only files.
 - Output files: `bridge/imports/catalog/equipment-and-adders.json` and `bridge/imports/validation-report.json`.
+- Changeout planner runtime (2026-02-25): `POST /estimator/changeout-plan` now auto-loads the ingested `preferred` profile catalog by default, refreshes ingest when report/profile is stale, and can merge imported catalog with user-saved catalog (`include_user_catalog`).
+- Edge-case adder mapping (2026-02-25): planner now attempts keyword-based mapping of install-condition risks (tight attic, crane, curb adapter, etc.) to catalog adders first, then falls back to manual default adders when no direct catalog match exists.

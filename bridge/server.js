@@ -14,6 +14,7 @@ import * as cursor from './cursor-api.js';
 import { buildChangeoutPlan } from './estimator-changeout.js';
 import { buildEstimate, renderEstimateHtml } from './estimator-engine.js';
 import { EstimatorValidationError } from './estimator-domain.js';
+import { getIngestReport, loadIngestedEstimatorCatalog } from './imports/catalog-adapter.js';
 import {
   buildHousecallAppointmentLookupRequest,
   buildHousecallUpsertPlan,
@@ -370,8 +371,55 @@ app.post('/estimator/changeout-plan', requireBridgeAuth, applyRateLimit, async (
   }
   try {
     const profile = await getEstimatorProfile(userId);
+    const catalogProfile = asTrimmedString(req.body?.catalog_profile) || 'preferred';
+    const useImportedCatalog = req.body?.use_imported_catalog !== false;
+    const includeUserCatalog = req.body?.include_user_catalog !== false;
+    const refreshImportCatalog = req.body?.refresh_import_catalog !== false;
+    let importedCatalogMeta = null;
+
+    let planProfile = profile;
+    if (useImportedCatalog) {
+      let refreshResult = null;
+      const reportBefore = getIngestReport();
+      if (refreshImportCatalog && shouldRefreshImportedCatalog(reportBefore, catalogProfile)) {
+        refreshResult = await runIngestScript({ profile: catalogProfile });
+      }
+
+      const importedCatalog = loadIngestedEstimatorCatalog(catalogProfile);
+      if (importedCatalog.length > 0) {
+        const mergedCatalog = includeUserCatalog
+          ? mergeCatalogs(importedCatalog, profile.catalog)
+          : importedCatalog;
+        planProfile = {
+          ...profile,
+          catalog: mergedCatalog,
+        };
+      }
+
+      const reportAfter = getIngestReport();
+      importedCatalogMeta = {
+        enabled: true,
+        profile: catalogProfile,
+        imported_catalog_count: importedCatalog.length,
+        effective_catalog_count: planProfile.catalog.length,
+        include_user_catalog: includeUserCatalog,
+        refreshed: Boolean(refreshResult),
+        refresh_ok: refreshResult ? refreshResult.code === 0 : true,
+        refresh_exit_code: refreshResult ? refreshResult.code : 0,
+        refresh_stderr: refreshResult?.stderr || undefined,
+        report_profile: reportAfter?.profile || reportBefore?.profile || undefined,
+      };
+    } else {
+      importedCatalogMeta = {
+        enabled: false,
+        profile: null,
+        imported_catalog_count: 0,
+        effective_catalog_count: profile.catalog.length,
+      };
+    }
+
     const plan = buildChangeoutPlan({
-      profile,
+      profile: planProfile,
       intake: req.body?.intake,
       customer: req.body?.customer,
       project: req.body?.project,
@@ -380,6 +428,7 @@ app.post('/estimator/changeout-plan', requireBridgeAuth, applyRateLimit, async (
     return res.json({
       user_id: userId,
       plan,
+      catalog_runtime: importedCatalogMeta,
     });
   } catch (err) {
     return handleEstimatorError(err, res);
@@ -641,41 +690,80 @@ app.get('/agent/:userId', requireBridgeAuth, async (req, res) => {
 
 const __dirnameBridge = dirname(fileURLToPath(import.meta.url));
 
-app.post('/ingest', requireBridgeAuth, async (req, res) => {
-  const only = req.body?.only ?? req.query?.only;
-  const profile = req.body?.profile ?? req.query?.profile;
-  const profilePath = req.body?.profile_path ?? req.query?.profile_path;
+function mergeCatalogs(primary = [], secondary = []) {
+  const merged = new Map();
+  for (const item of Array.isArray(primary) ? primary : []) {
+    if (!item?.sku) continue;
+    merged.set(item.sku, item);
+  }
+  for (const item of Array.isArray(secondary) ? secondary : []) {
+    if (!item?.sku) continue;
+    merged.set(item.sku, item);
+  }
+  return Array.from(merged.values());
+}
+
+function shouldRefreshImportedCatalog(report, profileName) {
+  if (!report || typeof report !== 'object') return true;
+  if ((report.profile || '') !== profileName) return true;
+  if (Array.isArray(report.errors) && report.errors.length > 0) return true;
+  if (!Array.isArray(report.filesProcessed) || report.filesProcessed.length === 0) return true;
+  return false;
+}
+
+function runIngestScript(options = {}) {
   const args = ['imports/ingest.js'];
-  if (only) args.push('--only', `${only}`);
-  if (profile) args.push('--profile', `${profile}`);
-  if (profilePath) args.push('--profile-path', `${profilePath}`);
+  if (options.only) args.push('--only', `${options.only}`);
+  if (options.profile) args.push('--profile', `${options.profile}`);
+  if (options.profilePath) args.push('--profile-path', `${options.profilePath}`);
+
   return new Promise((resolve) => {
     const child = spawn('node', args, { cwd: __dirnameBridge, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '';
     let err = '';
-    child.stdout.on('data', (d) => { out += d; });
-    child.stderr.on('data', (d) => { err += d; });
-    child.on('close', (code) => {
-      const reportPath = join(__dirnameBridge, 'imports', 'validation-report.json');
-      let report = null;
-      if (existsSync(reportPath)) {
-        try {
-          report = JSON.parse(readFileSync(reportPath, 'utf8'));
-        } catch (e) {
-          report = { error: 'Failed to read report', stderr: err };
-        }
-      } else {
-        report = { error: 'Ingest did not produce report', stdout: out, stderr: err };
-      }
-      res.status(code === 0 ? 200 : 422).json({
-        ok: code === 0,
-        exitCode: code,
-        report,
-        stdout: out.trim(),
-        stderr: err.trim() || undefined,
-      });
-      resolve();
+    child.stdout.on('data', (d) => {
+      out += d;
     });
+    child.stderr.on('data', (d) => {
+      err += d;
+    });
+    child.on('close', (code) => {
+      resolve({
+        code: Number.isFinite(code) ? code : 1,
+        stdout: out.trim(),
+        stderr: err.trim(),
+      });
+    });
+  });
+}
+
+app.post('/ingest', requireBridgeAuth, async (req, res) => {
+  const only = req.body?.only ?? req.query?.only;
+  const profile = req.body?.profile ?? req.query?.profile;
+  const profilePath = req.body?.profile_path ?? req.query?.profile_path;
+  const ingestResult = await runIngestScript({ only, profile, profilePath });
+  const reportPath = join(__dirnameBridge, 'imports', 'validation-report.json');
+  let report = null;
+  if (existsSync(reportPath)) {
+    try {
+      report = JSON.parse(readFileSync(reportPath, 'utf8'));
+    } catch (_) {
+      report = { error: 'Failed to read report', stderr: ingestResult.stderr };
+    }
+  } else {
+    report = {
+      error: 'Ingest did not produce report',
+      stdout: ingestResult.stdout,
+      stderr: ingestResult.stderr,
+    };
+  }
+
+  return res.status(ingestResult.code === 0 ? 200 : 422).json({
+    ok: ingestResult.code === 0,
+    exitCode: ingestResult.code,
+    report,
+    stdout: ingestResult.stdout,
+    stderr: ingestResult.stderr || undefined,
   });
 });
 

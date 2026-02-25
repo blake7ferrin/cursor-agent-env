@@ -6,6 +6,7 @@ const RISK_ADDER_MAP = Object.freeze({
   tightAttic: {
     code: 'tight_attic',
     label: 'Tight attic access',
+    keywords: ['tight attic', 'attic access', 'crawl access', 'restricted attic'],
     manualItem: {
       code: 'ADDER-TIGHT-ATTIC',
       name: 'Tight attic access labor adder',
@@ -19,6 +20,7 @@ const RISK_ADDER_MAP = Object.freeze({
   craneRequired: {
     code: 'crane_required',
     label: 'Crane or lift required',
+    keywords: ['crane', 'lift', 'rigging'],
     manualItem: {
       code: 'ADDER-CRANE',
       name: 'Crane / lift coordination adder',
@@ -32,6 +34,7 @@ const RISK_ADDER_MAP = Object.freeze({
   curbAdapterRequired: {
     code: 'curb_adapter_required',
     label: 'Curb adapter required',
+    keywords: ['curb adapter', 'adapter curb', 'roof curb'],
     manualItem: {
       code: 'ADDER-CURB-ADAPTER',
       name: 'Curb adapter fabrication/install adder',
@@ -45,6 +48,7 @@ const RISK_ADDER_MAP = Object.freeze({
   downflowMobileHomeCoil: {
     code: 'mobile_home_downflow',
     label: 'Downflow mobile-home coil configuration',
+    keywords: ['mobile home', 'downflow', 'manufactured home'],
     manualItem: {
       code: 'ADDER-MOBILE-DOWNFLOW',
       name: 'Downflow mobile-home adaptation adder',
@@ -58,6 +62,7 @@ const RISK_ADDER_MAP = Object.freeze({
   lineSetReplacementRequired: {
     code: 'line_set_replacement',
     label: 'Line set replacement required',
+    keywords: ['line set', 'lineset', 'line-set'],
     manualItem: {
       code: 'ADDER-LINESET',
       name: 'Line-set replacement labor adder',
@@ -71,6 +76,7 @@ const RISK_ADDER_MAP = Object.freeze({
   electricalUpgrade: {
     code: 'electrical_upgrade',
     label: 'Electrical upgrade likely',
+    keywords: ['electrical', 'breaker', 'disconnect', 'wire', 'conductor'],
     manualItem: {
       code: 'ADDER-ELECTRICAL',
       name: 'Electrical scope review adder',
@@ -123,6 +129,17 @@ function normalizePhase(value) {
   return normalized;
 }
 
+function normalizeSystemType(value) {
+  const normalized = normalizeLower(value).replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!normalized) return '';
+  if (normalized.includes('mini split') || normalized.includes('ductless')) return 'mini_split';
+  if (normalized.includes('package')) return 'package_unit';
+  if (normalized.includes('heat pump') || normalized === 'hp') return 'split_heat_pump';
+  if (normalized.includes('gas') && normalized.includes('split')) return 'split_ac_furnace';
+  if (normalized.includes('air conditioner') || normalized.includes('split ac') || normalized === 'ac') return 'split_ac';
+  return normalized.replace(/\s+/g, '_');
+}
+
 function findAttribute(attributes, keys) {
   if (!attributes || typeof attributes !== 'object') return '';
   for (const key of keys) {
@@ -134,6 +151,10 @@ function findAttribute(attributes, keys) {
     if (value !== undefined) return value;
   }
   return '';
+}
+
+function normalizeForMatch(value) {
+  return normalizeText(value).toLowerCase();
 }
 
 function parseTonnageFromText(text) {
@@ -148,8 +169,26 @@ function summarizeCatalogOption(item) {
   const attrs = item.attributes || {};
   const tonnage = normalizeNumber(findAttribute(attrs, ['tonnage', 'capacity_tons'])) ?? parseTonnageFromText(item.name);
   const seer2 = normalizeNumber(findAttribute(attrs, ['seer2', 'seer_2', 'seer_rating', 'seer']));
-  const brand = normalizeText(findAttribute(attrs, ['brand', 'manufacturer', 'oemBrand']));
-  const systemType = normalizeText(findAttribute(attrs, ['systemType', 'system_type', 'system']));
+  const brand =
+    normalizeText(findAttribute(attrs, ['brand', 'manufacturer', 'oemBrand'])) ||
+    (normalizeForMatch(item.name).includes('ac pro')
+      ? 'AC Pro'
+      : normalizeForMatch(item.name).includes('day & night')
+        ? 'Day & Night'
+        : '');
+  const systemTypeRaw =
+    normalizeText(findAttribute(attrs, ['systemType', 'system_type', 'system'])) ||
+    (normalizeForMatch(item.name).includes('heat pump')
+      ? 'Heat Pump'
+      : normalizeForMatch(item.name).includes('mini split') || normalizeForMatch(item.name).includes('mini-split')
+        ? 'Mini Split'
+        : normalizeForMatch(item.name).includes('package')
+          ? 'Package Unit'
+          : normalizeForMatch(item.name).includes('air conditioner')
+            ? 'Air Conditioner'
+            : '');
+  const systemType = systemTypeRaw;
+  const systemTypeCanonical = normalizeSystemType(systemTypeRaw);
   const phase = normalizePhase(findAttribute(attrs, ['phase', 'power_phase']));
   const vendorContact = normalizeText(
     findAttribute(attrs, ['vendorContact', 'vendor_contact', 'supplier_contact', 'distributor_contact']),
@@ -166,6 +205,7 @@ function summarizeCatalogOption(item) {
     tonnage,
     seer2,
     systemType,
+    systemTypeCanonical,
     phase,
     vendorContact,
     vendorQuoteRequired,
@@ -196,15 +236,85 @@ function getRiskFlags(intake) {
   return riskFlags;
 }
 
-function getComplexityAdders(intake) {
-  const conditions = intake.installConditions || {};
-  const adders = [];
-  for (const [conditionKey, config] of Object.entries(RISK_ADDER_MAP)) {
-    if (normalizeBoolean(conditions[conditionKey]) && config.manualItem) {
-      adders.push(config.manualItem);
+function toManualItemFromCatalogAdder(item, fallbackCode) {
+  return {
+    code: item.sku || fallbackCode,
+    name: item.name,
+    itemType: item.itemType === 'equipment' ? 'service' : item.itemType,
+    quantity: 1,
+    unitCost: Number.isFinite(Number(item.unitCost)) ? Number(item.unitCost) : 0,
+    laborHoursPerUnit: Number.isFinite(Number(item.defaultLaborHours)) ? Number(item.defaultLaborHours) : 0,
+    taxable: item.taxable !== undefined ? Boolean(item.taxable) : false,
+  };
+}
+
+function scoreAdderCandidate(item, keywords) {
+  const attrs = item.attributes || {};
+  const sourceCategory = normalizeForMatch(attrs.sourceCategory);
+  const sourceSubcategory = normalizeForMatch(attrs.sourceSubcategory);
+  const nameBlob = `${normalizeForMatch(item.name)} ${sourceCategory} ${sourceSubcategory}`;
+  let score = 0;
+  let keywordHits = 0;
+  for (const keyword of keywords) {
+    if (nameBlob.includes(normalizeForMatch(keyword))) {
+      score += 3;
+      keywordHits += 1;
     }
   }
-  return adders;
+  if (keywordHits === 0) return 0;
+  if (sourceCategory.includes('adder')) score += 3;
+  if (sourceCategory.includes('install')) score += 2;
+  if (sourceSubcategory.includes('adder')) score += 2;
+  if (item.itemType === 'labor') score += 1;
+  return score;
+}
+
+function findCatalogAdderForRisk(catalog, riskConfig) {
+  const keywords = riskConfig.keywords || [];
+  if (!keywords.length || !Array.isArray(catalog) || !catalog.length) return null;
+
+  let best = null;
+  let bestScore = 0;
+  for (const item of catalog) {
+    if (!item || typeof item !== 'object') continue;
+    if (item.itemType === 'equipment') continue;
+    const score = scoreAdderCandidate(item, keywords);
+    if (score > bestScore) {
+      best = item;
+      bestScore = score;
+    }
+  }
+  return bestScore > 0 ? best : null;
+}
+
+function getComplexityAdders(intake, catalog) {
+  const conditions = intake.installConditions || {};
+  const adders = [];
+  const resolution = [];
+  for (const [conditionKey, config] of Object.entries(RISK_ADDER_MAP)) {
+    if (!normalizeBoolean(conditions[conditionKey])) continue;
+    const catalogAdder = findCatalogAdderForRisk(catalog, config);
+    if (catalogAdder) {
+      adders.push(toManualItemFromCatalogAdder(catalogAdder, config.manualItem?.code || config.code));
+      resolution.push({
+        risk: config.code,
+        source: 'catalog',
+        sku: catalogAdder.sku || '',
+        name: catalogAdder.name || '',
+      });
+      continue;
+    }
+    if (config.manualItem) {
+      adders.push(config.manualItem);
+      resolution.push({
+        risk: config.code,
+        source: 'fallback',
+        sku: config.manualItem.code,
+        name: config.manualItem.name,
+      });
+    }
+  }
+  return { adders, resolution };
 }
 
 function buildFollowUpQuestions({ missingFields, riskFlags, lane, requestedBrands }) {
@@ -251,13 +361,13 @@ function buildVendorChecklist(requestedBrands, recommendedOptions) {
 function scoreOption(option, intake, requestedBrands) {
   let score = 0;
   const requestedTonnage = normalizeNumber(intake.tonnage);
-  const requestedSystemType = normalizeLower(intake.systemType);
+  const requestedSystemType = normalizeSystemType(intake.systemType);
   const requestedPhase = normalizePhase(intake.phase || 'single');
   const optionBrandLower = normalizeLower(option.brand);
 
   if (requestedBrands.length && requestedBrands.some((brand) => optionBrandLower === normalizeLower(brand))) score += 4;
   if (requestedTonnage !== null && option.tonnage !== null && Math.abs(option.tonnage - requestedTonnage) < 0.01) score += 3;
-  if (requestedSystemType && normalizeLower(option.systemType) === requestedSystemType) score += 3;
+  if (requestedSystemType && option.systemTypeCanonical && option.systemTypeCanonical === requestedSystemType) score += 3;
   if (requestedPhase && option.phase && normalizePhase(option.phase) === requestedPhase) score += 2;
   if (!option.vendorQuoteRequired) score += 1;
   return score;
@@ -312,7 +422,7 @@ export function buildChangeoutPlan({ profile = {}, intake = {}, customer = {}, p
     .map((item) => summarizeCatalogOption(item));
 
   const requestedTonnage = normalizeNumber(intake.tonnage);
-  const requestedSystemType = normalizeLower(intake.systemType);
+  const requestedSystemType = normalizeSystemType(intake.systemType);
   const requestedPhase = normalizePhase(intake.phase || 'single');
 
   const recommendedOptions = equipmentOptions
@@ -324,7 +434,7 @@ export function buildChangeoutPlan({ profile = {}, intake = {}, customer = {}, p
       if (requestedTonnage !== null && option.tonnage !== null && Math.abs(option.tonnage - requestedTonnage) > 0.01) {
         return false;
       }
-      if (requestedSystemType && option.systemType && normalizeLower(option.systemType) !== requestedSystemType) {
+      if (requestedSystemType && option.systemTypeCanonical && option.systemTypeCanonical !== requestedSystemType) {
         return false;
       }
       if (requestedPhase && option.phase && normalizePhase(option.phase) !== requestedPhase) {
@@ -349,7 +459,7 @@ export function buildChangeoutPlan({ profile = {}, intake = {}, customer = {}, p
   const requiresManualReview = riskFlags.some((flag) =>
     ['commercial_job', 'three_phase_power', 'crane_required', 'curb_adapter_required'].includes(flag.code),
   );
-  const complexityAdders = getComplexityAdders(intake);
+  const { adders: complexityAdders, resolution: complexityAddersResolution } = getComplexityAdders(intake, catalog);
   const lane = laneFromContext({
     intake,
     missingFields,
@@ -416,6 +526,7 @@ export function buildChangeoutPlan({ profile = {}, intake = {}, customer = {}, p
     follow_up_questions: followUpQuestions,
     recommended_options: recommendedOptions,
     complexity_adders: complexityAdders,
+    complexity_adders_resolution: complexityAddersResolution,
     vendor_quote: vendorChecklist,
     profit_targets: {
       targetGrossMargin: config.targetGrossMargin ?? 0.4,

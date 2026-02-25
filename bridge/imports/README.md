@@ -60,7 +60,7 @@ Recommended runs:
 
 Ingester reads selected CSV/XLSX files, validates, merges into one catalog, and writes:
 
-- `imports/catalog/equipment-and-adders.json` — validated rows for the planner
+- `imports/catalog/equipment-and-adders.json` — validated rows consumed by `/estimator/changeout-plan` (auto-adapted into estimator catalog items at runtime)
 - `imports/validation-report.json` — errors/warnings/duplicates and manual reference files
 
 ## HTTP endpoint (optional)
