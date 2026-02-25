@@ -4,13 +4,15 @@ Import equipment options and pricing (AC Pro, Day & Night, adders) into the esti
 
 ## Folder structure
 
-- **incoming/** — Raw uploads (ZIP unpacked here, or drop CSV/XLSX). Leave files here for ingestion.
+- **incoming/** — Raw uploads (ZIP unpacked here, or drop CSV/XLSX/PDF). Leave files here for ingestion.
 - **templates/** — Empty CSV templates with required headers. Copy to fill in new equipment or adders.
 - **catalog/** — Validated, merged catalog written by the importer (JSON). Consumed by the planner/estimator.
+- **source-profiles.json** — Named source profiles (file include lists + XLSX parsing options).
 
 ## Schema (equipment and adders)
 
-All CSVs use the same column set. Required for equipment: `name`, `category`, `subcategory_1`, `price`, `cost`. Optional: `industry`, `description`, `taxable`, `unit_of_measure`, `online_booking_enabled`.
+All normalized rows use the same required fields: `name`, `category`, `subcategory_1`, `price`, `cost`.
+Optional fields: `industry`, `description`, `taxable`, `unit_of_measure`, `online_booking_enabled`.
 
 | Column | Required | Notes |
 |--------|----------|--------|
@@ -25,7 +27,7 @@ All CSVs use the same column set. Required for equipment: `name`, `category`, `s
 | unit_of_measure | No | e.g. "Each" |
 | online_booking_enabled | No | true/false |
 
-Validation checks: missing tonnage/system type/phase (parsed from name or flagged), duplicate SKUs (by name + subcategory_1), bad costs (non-numeric, cost &gt; price).
+Validation checks: missing tonnage/system type (parsed from name or flagged), duplicate keys (category + subcategory_1 + name), bad costs (non-numeric, cost &gt; price).
 
 ## Run ingestion
 
@@ -36,29 +38,43 @@ cd bridge
 npm run ingest
 ```
 
-Or with explicit path or only specific files (recommended for clean catalog):
+Or with explicit path/profile or only specific files:
 
 ```bash
 node imports/ingest.js
 node imports/ingest.js --dir imports/incoming
 node imports/ingest.js --only CLEAN,ChangeOut_Pricebook
+node imports/ingest.js --profile preferred
+node imports/ingest.js --profile canonical_csv_only
 ```
 
-Using `--only CLEAN,ChangeOut_Pricebook` limits to the canonical AC Pro equipment list and change-out/adders pricebook (same schema); other CSVs in `incoming/` may have different columns and produce validation errors.
+Recommended runs:
 
-Ingester reads all `.csv` files in `incoming/` (or only those whose names contain the `--only` substrings), validates, merges into one catalog, and writes:
+- `--profile preferred`  
+  Uses your preferred source list:
+  - Day & Night Google Sheet XLSX (parsed to equipment rows)
+  - AC Pro clean CSV + ChangeOut pricebook CSV
+  - PDF references (logged in report as manual reference only)
+- `--profile canonical_csv_only`  
+  Strictly uses clean AC Pro + ChangeOut CSVs.
+
+Ingester reads selected CSV/XLSX files, validates, merges into one catalog, and writes:
 
 - `imports/catalog/equipment-and-adders.json` — validated rows for the planner
-- `imports/validation-report.json` — errors and warnings (missing attributes, duplicates, bad costs)
+- `imports/validation-report.json` — errors/warnings/duplicates and manual reference files
 
 ## HTTP endpoint (optional)
 
-`POST /ingest` (requires bridge auth token). Runs the importer and returns the validation report and exit code. Body or query: `only=CLEAN,ChangeOut_Pricebook` to restrict to canonical files.
+`POST /ingest` (requires bridge auth token). Runs importer and returns validation report + exit code.
+
+Body/query options:
+- `profile=preferred` or `profile=canonical_csv_only`
+- `only=CLEAN,ChangeOut_Pricebook`
 
 ## Source files (this bundle)
 
 - **AC Pro equipment:** `PolarAir_ACPro_Equipment_v7_AHRI_SEER2_ALL_TONNAGES_CLEAN.csv` (preferred), or Pricing_v2 / other AC Pro CSVs.
 - **Change-out / adders:** `PolarAir_ChangeOut_Pricebook_v1.csv` or `PolarAir_ChangeOut_Installs_v3_SALES_DESCRIPTIONS.csv`.
-- **Google Sheet:** Export as CSV from the linked sheet and drop into `incoming/` (or use the provided `.xlsx`; ingest script supports CSV first).
+- **Google Sheet:** provided `.xlsx` is parsed directly when using `--profile preferred`.
 
 Google Sheet link: see `incoming/google-sheet-link.txt`.

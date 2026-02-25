@@ -1,0 +1,43 @@
+{
+  "profiles": {
+    "preferred": {
+      "description": "User-preferred sources: Day & Night Google Sheet + AC Pro canonical CSV/adders + PDF references.",
+      "include": [
+        "google-sheet_1fhBMSr4xbh28MJs1R_EhNLVvfEXzpn5KKE7WpUS0TLc.xlsx",
+        "PolarAir_ACPro_Equipment_v7_AHRI_SEER2_ALL_TONNAGES_CLEAN.csv",
+        "PolarAir_ChangeOut_Pricebook_v1.csv",
+        "ARIZONA EQUIPMENT - A PRICED GUIDE.pdf",
+        "A2L_ACProMiniSplit2025.08.pdf",
+        "HVAC Installers Pricing 10_4_24 (1).pdf"
+      ],
+      "manual_reference_only": [
+        "ARIZONA EQUIPMENT - A PRICED GUIDE.pdf",
+        "A2L_ACProMiniSplit2025.08.pdf",
+        "HVAC Installers Pricing 10_4_24 (1).pdf"
+      ],
+      "xlsx": {
+        "target_margin": 0.4,
+        "default_cost_mode": "cost_only",
+        "default_category": "EQUIPMENT",
+        "default_subcategory_prefix": "DAY & NIGHT",
+        "ignore_sheets": [
+          "Title",
+          "Minimum Efficiency Standard",
+          "Tax Credits-Utility Rebates",
+          "Filter Base Chart",
+          "Plenums",
+          "Sheet1",
+          "Paste Bid Here"
+        ],
+        "break_after_blank_rows": 30
+      }
+    },
+    "canonical_csv_only": {
+      "description": "Current canonical structured CSV set only.",
+      "include": [
+        "PolarAir_ACPro_Equipment_v7_AHRI_SEER2_ALL_TONNAGES_CLEAN.csv",
+        "PolarAir_ChangeOut_Pricebook_v1.csv"
+      ]
+    }
+  }
+}

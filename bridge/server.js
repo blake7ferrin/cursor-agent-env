@@ -643,7 +643,12 @@ const __dirnameBridge = dirname(fileURLToPath(import.meta.url));
 
 app.post('/ingest', requireBridgeAuth, async (req, res) => {
   const only = req.body?.only ?? req.query?.only;
-  const args = only ? ['imports/ingest.js', '--only', only] : ['imports/ingest.js'];
+  const profile = req.body?.profile ?? req.query?.profile;
+  const profilePath = req.body?.profile_path ?? req.query?.profile_path;
+  const args = ['imports/ingest.js'];
+  if (only) args.push('--only', `${only}`);
+  if (profile) args.push('--profile', `${profile}`);
+  if (profilePath) args.push('--profile-path', `${profilePath}`);
   return new Promise((resolve) => {
     const child = spawn('node', args, { cwd: __dirnameBridge, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '';

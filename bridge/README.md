@@ -58,7 +58,7 @@ Default port: 3000. Set `PORT` to change it.
 - `GET /health` — Health check.
 - `POST /chat` — Send a message to the agent. Body: `{ "user_id": "required-id", "message": "your text" }`. Requires auth token. Returns `{ reply, agent_id, state, parsed, dispatched }` when the agent has finished (or a partial reply on timeout). Polling is used to wait for completion.
 - `GET /agent/:userId` — Get stored `agent_id` for a user (if any). Requires auth token.
-- `POST /ingest` — Run HVAC catalog import from `bridge/imports/incoming/`. Requires auth token. Returns validation report. Optional body/query: `only=CLEAN,ChangeOut_Pricebook` to use only canonical CSVs. See `imports/README.md`.
+- `POST /ingest` — Run HVAC catalog import from `bridge/imports/incoming/`. Requires auth token. Returns validation report. Optional body/query: `profile=preferred|canonical_csv_only` and/or `only=...`. See `imports/README.md`.
 - `GET /` — Simple PWA chat UI (served from `public/`).
 - `PUT /estimator/config` — Save pricing assumptions for one user. Body: `{ "user_id": "...", "config": { ... } }`.
 - `PUT /estimator/catalog` — Save/replace parts + equipment catalog. Body: `{ "user_id": "...", "items": [ ... ] }`.
