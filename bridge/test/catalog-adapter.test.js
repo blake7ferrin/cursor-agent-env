@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { buildEstimate } from '../estimator-engine.js';
 import { getIngestReport, loadIngestedEstimatorCatalog } from '../imports/catalog-adapter.js';
 
 test('catalog adapter loads preferred profile rows as estimator catalog items', () => {
@@ -21,4 +22,19 @@ test('catalog adapter exposes ingest report when available', () => {
   if (!report) return;
   assert.equal(typeof report, 'object');
   assert.equal(Array.isArray(report.filesProcessed), true);
+});
+
+test('catalog adapter output can be estimated using buildEstimate', () => {
+  const catalog = loadIngestedEstimatorCatalog('preferred');
+  const equipmentItem = catalog.find((item) => item.itemType === 'equipment');
+  if (!equipmentItem) return;
+
+  const estimate = buildEstimate({
+    catalog,
+    selections: [{ sku: equipmentItem.sku, quantity: 1 }],
+  });
+
+  assert.equal(typeof estimate?.estimate_id, 'string');
+  assert.equal(Array.isArray(estimate?.line_items), true);
+  assert.equal(estimate.line_items.length >= 1, true);
 });

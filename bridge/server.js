@@ -371,52 +371,10 @@ app.post('/estimator/changeout-plan', requireBridgeAuth, applyRateLimit, async (
   }
   try {
     const profile = await getEstimatorProfile(userId);
-    const catalogProfile = asTrimmedString(req.body?.catalog_profile) || 'preferred';
-    const useImportedCatalog = req.body?.use_imported_catalog !== false;
-    const includeUserCatalog = req.body?.include_user_catalog !== false;
-    const refreshImportCatalog = req.body?.refresh_import_catalog !== false;
-    let importedCatalogMeta = null;
-
-    let planProfile = profile;
-    if (useImportedCatalog) {
-      let refreshResult = null;
-      const reportBefore = getIngestReport();
-      if (refreshImportCatalog && shouldRefreshImportedCatalog(reportBefore, catalogProfile)) {
-        refreshResult = await runIngestScript({ profile: catalogProfile });
-      }
-
-      const importedCatalog = loadIngestedEstimatorCatalog(catalogProfile);
-      if (importedCatalog.length > 0) {
-        const mergedCatalog = includeUserCatalog
-          ? mergeCatalogs(importedCatalog, profile.catalog)
-          : importedCatalog;
-        planProfile = {
-          ...profile,
-          catalog: mergedCatalog,
-        };
-      }
-
-      const reportAfter = getIngestReport();
-      importedCatalogMeta = {
-        enabled: true,
-        profile: catalogProfile,
-        imported_catalog_count: importedCatalog.length,
-        effective_catalog_count: planProfile.catalog.length,
-        include_user_catalog: includeUserCatalog,
-        refreshed: Boolean(refreshResult),
-        refresh_ok: refreshResult ? refreshResult.code === 0 : true,
-        refresh_exit_code: refreshResult ? refreshResult.code : 0,
-        refresh_stderr: refreshResult?.stderr || undefined,
-        report_profile: reportAfter?.profile || reportBefore?.profile || undefined,
-      };
-    } else {
-      importedCatalogMeta = {
-        enabled: false,
-        profile: null,
-        imported_catalog_count: 0,
-        effective_catalog_count: profile.catalog.length,
-      };
-    }
+    const { runtimeProfile: planProfile, catalogRuntime: importedCatalogMeta } = await resolveRuntimeEstimatorProfile(
+      profile,
+      req.body,
+    );
 
     const plan = buildChangeoutPlan({
       profile: planProfile,
@@ -442,9 +400,10 @@ app.post('/estimator/estimate', requireBridgeAuth, applyRateLimit, async (req, r
   }
   try {
     const profile = await getEstimatorProfile(userId);
+    const { runtimeProfile, catalogRuntime } = await resolveRuntimeEstimatorProfile(profile, req.body);
     const estimate = buildEstimate({
-      config: profile.config,
-      catalog: profile.catalog,
+      config: runtimeProfile.config,
+      catalog: runtimeProfile.catalog,
       selections: req.body?.selections,
       manual_items: req.body?.manual_items,
       customer: req.body?.customer,
@@ -459,6 +418,7 @@ app.post('/estimator/estimate', requireBridgeAuth, applyRateLimit, async (req, r
     return res.json({
       estimate,
       printable_html: html,
+      catalog_runtime: catalogRuntime,
     });
   } catch (err) {
     return handleEstimatorError(err, res);
@@ -473,11 +433,14 @@ app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, async
 
   try {
     let estimate = req.body?.estimate;
+    let catalogRuntime = null;
     if (!estimate || typeof estimate !== 'object') {
       const profile = await getEstimatorProfile(userId);
+      const runtime = await resolveRuntimeEstimatorProfile(profile, req.body);
+      catalogRuntime = runtime.catalogRuntime;
       estimate = buildEstimate({
-        config: profile.config,
-        catalog: profile.catalog,
+        config: runtime.runtimeProfile.config,
+        catalog: runtime.runtimeProfile.catalog,
         selections: req.body?.selections,
         manual_items: req.body?.manual_items,
         customer: req.body?.customer,
@@ -561,6 +524,7 @@ app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, async
       return res.json({
         dry_run: true,
         estimate,
+        catalog_runtime: catalogRuntime,
         upsert_strategy: exportPlan.strategy,
         resolved_context: exportPlan.context,
         lookup,
@@ -625,6 +589,7 @@ app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, async
 
     return res.status(success ? 200 : 502).json({
       estimate,
+      catalog_runtime: catalogRuntime,
       upsert_strategy: exportPlan.strategy,
       resolved_context: exportPlan.context,
       lookup,
@@ -735,6 +700,62 @@ function runIngestScript(options = {}) {
       });
     });
   });
+}
+
+async function resolveRuntimeEstimatorProfile(baseProfile, rawBody) {
+  const body = rawBody && typeof rawBody === 'object' ? rawBody : {};
+  const catalogProfile = asTrimmedString(body.catalog_profile) || 'preferred';
+  const useImportedCatalog = body.use_imported_catalog !== false;
+  const includeUserCatalog = body.include_user_catalog !== false;
+  const refreshImportCatalog = body.refresh_import_catalog !== false;
+
+  if (!useImportedCatalog) {
+    return {
+      runtimeProfile: baseProfile,
+      catalogRuntime: {
+        enabled: false,
+        profile: null,
+        imported_catalog_count: 0,
+        effective_catalog_count: Array.isArray(baseProfile?.catalog) ? baseProfile.catalog.length : 0,
+      },
+    };
+  }
+
+  let refreshResult = null;
+  const reportBefore = getIngestReport();
+  if (refreshImportCatalog && shouldRefreshImportedCatalog(reportBefore, catalogProfile)) {
+    refreshResult = await runIngestScript({ profile: catalogProfile });
+  }
+
+  const importedCatalog = loadIngestedEstimatorCatalog(catalogProfile);
+  const mergedCatalog = importedCatalog.length
+    ? includeUserCatalog
+      ? mergeCatalogs(importedCatalog, baseProfile.catalog)
+      : importedCatalog
+    : baseProfile.catalog;
+
+  const runtimeProfile = {
+    ...baseProfile,
+    catalog: mergedCatalog,
+  };
+  const reportAfter = getIngestReport();
+
+  return {
+    runtimeProfile,
+    catalogRuntime: {
+      enabled: true,
+      profile: catalogProfile,
+      imported_catalog_count: importedCatalog.length,
+      effective_catalog_count: runtimeProfile.catalog.length,
+      include_user_catalog: includeUserCatalog,
+      refreshed: Boolean(refreshResult),
+      refresh_ok: refreshResult ? refreshResult.code === 0 : true,
+      refresh_exit_code: refreshResult ? refreshResult.code : 0,
+      refresh_stderr: refreshResult?.stderr || undefined,
+      report_profile: reportAfter?.profile || reportBefore?.profile || undefined,
+      fallback_to_user_catalog: importedCatalog.length === 0,
+    },
+  };
 }
 
 app.post('/ingest', requireBridgeAuth, async (req, res) => {

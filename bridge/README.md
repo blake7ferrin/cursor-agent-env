@@ -64,7 +64,7 @@ Default port: 3000. Set `PORT` to change it.
 - `PUT /estimator/catalog` — Save/replace parts + equipment catalog. Body: `{ "user_id": "...", "items": [ ... ] }`.
 - `GET /estimator/profile` — Read current estimator config + catalog (`user_id` query param or `x-user-id` header).
 - `POST /estimator/changeout-plan` — Intake-driven residential changeout planner (lane classification + questions + recommended options + optional estimate preview). By default, it auto-loads the ingested `preferred` profile catalog at runtime.
-- `POST /estimator/estimate` — Generate deterministic estimate totals and printable HTML. Body: `{ "user_id": "...", "selections": [ ... ], "manual_items": [ ... ], "customer": { ... }, "project": { ... }, "adjustments": { ... }, "output": "json|html" }`.
+- `POST /estimator/estimate` — Generate deterministic estimate totals and printable HTML. Auto-loads ingested `preferred` profile catalog by default (same runtime options as `changeout-plan`). Body: `{ "user_id": "...", "selections": [ ... ], "manual_items": [ ... ], "customer": { ... }, "project": { ... }, "adjustments": { ... }, "output": "json|html" }`.
 - `POST /estimator/export/housecall` — Build and send estimate to Housecall Pro. Supports dry-run and payload override.
 - `GET /integrations/housecall/config` — Returns Housecall auth mode summary (no secrets).
 - `POST /integrations/housecall/test` — Runs a lightweight authenticated test call to Housecall.
@@ -185,6 +185,9 @@ curl -X POST http://localhost:3000/estimator/estimate \
   -H "x-bridge-token: $BRIDGE_AUTH_TOKEN" \
   -d '{
     "user_id": "pwa:blake",
+    "catalog_profile": "preferred",
+    "use_imported_catalog": true,
+    "include_user_catalog": true,
     "customer": { "name": "Jane Smith" },
     "project": { "summary": "Replace upstairs heat pump system" },
     "selections": [
@@ -198,9 +201,14 @@ curl -X POST http://localhost:3000/estimator/estimate \
   }'
 ```
 
+For JSON output, response now includes `catalog_runtime` metadata to show which catalog profile was used and whether ingest refresh occurred.
+
 ## Housecall Pro export
 
 The bridge now supports exporting generated estimates to Housecall Pro.
+
+If you pass `selections`/`manual_items` (instead of a prebuilt `estimate` object), export uses the same runtime catalog options as `/estimator/estimate`:
+`catalog_profile`, `use_imported_catalog`, `include_user_catalog`, `refresh_import_catalog`.
 
 ### 1) Confirm connector config
 
