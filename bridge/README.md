@@ -22,6 +22,14 @@ Bridge service that connects Telegram and a simple PWA to the Cursor Cloud Agent
    - `LOCAL_ACTION_AUTH_TOKEN` — optional bearer token for the local relay.
    - `REDIS_URL` — optional Redis connection URL. When set, agent mapping and rate limits are persisted in Redis.
    - `ESTIMATOR_STORE_PATH` — optional path for persisted estimator config/catalog store (default: `bridge/data/estimator.json`).
+   - `HOUSECALL_PRO_API_BASE` — optional Housecall API base URL (default: `https://api.housecallpro.com`).
+   - `HOUSECALL_PRO_API_KEY` — Housecall bearer API key token (recommended if your account supports API keys).
+   - `HOUSECALL_PRO_ACCESS_TOKEN` — optional static bearer access token.
+   - `HOUSECALL_PRO_CLIENT_ID`, `HOUSECALL_PRO_CLIENT_SECRET`, `HOUSECALL_PRO_REFRESH_TOKEN` — OAuth refresh credentials for automatic access-token renewal.
+   - `HOUSECALL_PRO_TOKEN_URL` — optional OAuth token endpoint override (default: `<HOUSECALL_PRO_API_BASE>/oauth/token`).
+   - `HOUSECALL_PRO_CREATE_ESTIMATE_PATH` — optional estimate create endpoint override (default: `/v1/estimates`).
+   - `HOUSECALL_PRO_TEST_PATH` — optional test endpoint for `/integrations/housecall/test` (default: `/v1/customers`).
+   - `HOUSECALL_PRO_TIMEOUT_MS` — timeout for Housecall API calls (default: `30000`).
    - `TELEGRAM_BOT_TOKEN` — (optional) from [@BotFather](https://t.me/BotFather) if you want Telegram.
 4. Run the bridge with Doppler injecting env vars:
    ```bash
@@ -51,6 +59,10 @@ Default port: 3000. Set `PORT` to change it.
 - `PUT /estimator/catalog` — Save/replace parts + equipment catalog. Body: `{ "user_id": "...", "items": [ ... ] }`.
 - `GET /estimator/profile` — Read current estimator config + catalog (`user_id` query param or `x-user-id` header).
 - `POST /estimator/estimate` — Generate deterministic estimate totals and printable HTML. Body: `{ "user_id": "...", "selections": [ ... ], "manual_items": [ ... ], "customer": { ... }, "project": { ... }, "adjustments": { ... }, "output": "json|html" }`.
+- `POST /estimator/export/housecall` — Build and send estimate to Housecall Pro. Supports dry-run and payload override.
+- `GET /integrations/housecall/config` — Returns Housecall auth mode summary (no secrets).
+- `POST /integrations/housecall/test` — Runs a lightweight authenticated test call to Housecall.
+- `POST /integrations/housecall/request` — Debug endpoint for direct Housecall API calls.
 
 ## HVAC estimator MVP
 
@@ -122,6 +134,63 @@ curl -X POST http://localhost:3000/estimator/estimate \
     }
   }'
 ```
+
+## Housecall Pro export
+
+The bridge now supports exporting generated estimates to Housecall Pro.
+
+### 1) Confirm connector config
+
+```bash
+curl http://localhost:3000/integrations/housecall/config \
+  -H "x-bridge-token: $BRIDGE_AUTH_TOKEN"
+```
+
+### 2) Test Housecall auth
+
+```bash
+curl -X POST http://localhost:3000/integrations/housecall/test \
+  -H "Content-Type: application/json" \
+  -H "x-bridge-token: $BRIDGE_AUTH_TOKEN" \
+  -d '{}'
+```
+
+### 3) Dry-run export payload (recommended first)
+
+```bash
+curl -X POST http://localhost:3000/estimator/export/housecall \
+  -H "Content-Type: application/json" \
+  -H "x-bridge-token: $BRIDGE_AUTH_TOKEN" \
+  -d '{
+    "user_id": "pwa:blake",
+    "customer": { "name": "Jane Smith", "housecall_customer_id": "cust_123" },
+    "project": { "summary": "Replace upstairs heat pump", "housecall_job_id": "job_456" },
+    "selections": [{ "sku": "HP-3T-16", "quantity": 1 }],
+    "housecall": { "dry_run": true }
+  }'
+```
+
+### 4) Live export to Housecall
+
+```bash
+curl -X POST http://localhost:3000/estimator/export/housecall \
+  -H "Content-Type: application/json" \
+  -H "x-bridge-token: $BRIDGE_AUTH_TOKEN" \
+  -d '{
+    "user_id": "pwa:blake",
+    "customer": { "name": "Jane Smith", "housecall_customer_id": "cust_123" },
+    "project": { "summary": "Replace upstairs heat pump", "housecall_job_id": "job_456" },
+    "selections": [{ "sku": "HP-3T-16", "quantity": 1 }]
+  }'
+```
+
+### Notes on payload mapping
+
+- `POST /estimator/export/housecall` creates a best-effort payload from the estimator output.
+- If your Housecall account expects a different schema, use:
+  - `housecall.endpoint` to override the path
+  - `housecall.payload_override` to send your exact JSON body
+- This lets you move forward immediately while we tune field mapping to your exact Housecall API contract.
 
 ## Telegram
 

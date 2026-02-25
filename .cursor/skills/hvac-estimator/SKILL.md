@@ -44,6 +44,9 @@ Assuming bridge is running and `BRIDGE_AUTH_TOKEN` is available:
 3. Create estimate:
    - `POST /estimator/estimate`
    - Use `output: "html"` for a printable document.
+4. Export to Housecall Pro CRM:
+   - `POST /estimator/export/housecall`
+   - Use `housecall.dry_run=true` before live export.
 
 ## Guardrails
 
@@ -51,6 +54,7 @@ Assuming bridge is running and `BRIDGE_AUTH_TOKEN` is available:
 - If any required financial inputs are missing, return a draft + missing fields list.
 - Highlight when discounts push achieved margin below the target.
 - Keep estimate assumptions visible in final output.
+- For Housecall export, run dry-run first and only live export once customer/job mapping is confirmed.
 
 ## Response style
 

@@ -9,6 +9,8 @@ import TelegramBot from 'node-telegram-bot-api';
 import * as cursor from './cursor-api.js';
 import { buildEstimate, renderEstimateHtml } from './estimator-engine.js';
 import { EstimatorValidationError } from './estimator-domain.js';
+import { buildHousecallExportRequest } from './housecall-mapper.js';
+import { getHousecallConfigSummary, housecallRequest, testHousecallConnection } from './housecall-pro.js';
 import {
   getEstimatorProfile,
   replaceEstimatorCatalog,
@@ -90,6 +92,12 @@ function handleEstimatorError(err, res) {
   }
   console.error(err);
   return res.status(500).json({ error: err.message || 'Unknown estimator error' });
+}
+
+function sanitizePreview(value, maxLength = 500) {
+  if (value === undefined || value === null) return value;
+  const text = typeof value === 'string' ? value : JSON.stringify(value);
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
 }
 
 const applyRateLimit = createRateLimiter({
@@ -191,6 +199,57 @@ app.get('/health', (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/integrations/housecall/config', requireBridgeAuth, (req, res) => {
+  res.json({ housecall: getHousecallConfigSummary() });
+});
+
+app.post('/integrations/housecall/test', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  try {
+    const path = typeof req.body?.path === 'string' ? req.body.path.trim() : '';
+    const result = await testHousecallConnection(path || undefined);
+    return res.status(result.ok ? 200 : 502).json({
+      ok: result.ok,
+      status: result.status,
+      statusText: result.statusText,
+      request: { method: result.method, url: result.url },
+      body: result.body,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message || 'Housecall connection test failed' });
+  }
+});
+
+app.post('/integrations/housecall/request', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  const method = `${req.body?.method || 'GET'}`.toUpperCase();
+  const path = req.body?.path;
+  if (!path || typeof path !== 'string') {
+    return res.status(400).json({ error: 'Missing path' });
+  }
+  if (!path.startsWith('/v1/') && !path.startsWith('https://') && !path.startsWith('http://')) {
+    return res.status(400).json({ error: 'path must start with /v1/ or be an absolute URL' });
+  }
+  try {
+    const result = await housecallRequest({
+      method,
+      path,
+      query: req.body?.query,
+      body: req.body?.body,
+      headers: req.body?.headers,
+    });
+    return res.status(result.ok ? 200 : 502).json({
+      ok: result.ok,
+      status: result.status,
+      statusText: result.statusText,
+      request: { method: result.method, url: result.url },
+      body: result.body,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message || 'Housecall request failed' });
+  }
+});
+
 app.put('/estimator/config', requireBridgeAuth, applyRateLimit, async (req, res) => {
   const userId = extractUserId(req);
   const configPatch = req.body?.config;
@@ -267,6 +326,75 @@ app.post('/estimator/estimate', requireBridgeAuth, applyRateLimit, async (req, r
     return res.json({
       estimate,
       printable_html: html,
+    });
+  } catch (err) {
+    return handleEstimatorError(err, res);
+  }
+});
+
+app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  const userId = extractUserId(req);
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing user_id' });
+  }
+
+  try {
+    let estimate = req.body?.estimate;
+    if (!estimate || typeof estimate !== 'object') {
+      const profile = await getEstimatorProfile(userId);
+      estimate = buildEstimate({
+        config: profile.config,
+        catalog: profile.catalog,
+        selections: req.body?.selections,
+        manual_items: req.body?.manual_items,
+        customer: req.body?.customer,
+        project: req.body?.project,
+        adjustments: req.body?.adjustments,
+      });
+    }
+
+    const housecallOpts = req.body?.housecall && typeof req.body.housecall === 'object' ? req.body.housecall : {};
+    const requestPayload = buildHousecallExportRequest(estimate, {
+      endpoint: housecallOpts.endpoint,
+      method: housecallOpts.method,
+      customerId: housecallOpts.customer_id ?? housecallOpts.customerId,
+      jobId: housecallOpts.job_id ?? housecallOpts.jobId,
+      optionName: housecallOpts.option_name ?? housecallOpts.optionName,
+      note: housecallOpts.note,
+      payloadOverride: housecallOpts.payload_override ?? housecallOpts.payloadOverride,
+    });
+
+    if (housecallOpts.dry_run === true || housecallOpts.dryRun === true) {
+      return res.json({
+        dry_run: true,
+        estimate,
+        housecall_request: {
+          method: requestPayload.method,
+          path: requestPayload.path,
+          payload: requestPayload.payload,
+        },
+      });
+    }
+
+    const upstream = await housecallRequest({
+      method: requestPayload.method,
+      path: requestPayload.path,
+      body: requestPayload.payload,
+    });
+
+    return res.status(upstream.ok ? 200 : 502).json({
+      estimate,
+      housecall_request: {
+        method: requestPayload.method,
+        path: requestPayload.path,
+        payload_preview: sanitizePreview(requestPayload.payload, 2000),
+      },
+      housecall_response: {
+        ok: upstream.ok,
+        status: upstream.status,
+        statusText: upstream.statusText,
+        body: upstream.body,
+      },
     });
   } catch (err) {
     return handleEstimatorError(err, res);
