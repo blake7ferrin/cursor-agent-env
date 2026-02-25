@@ -335,7 +335,16 @@ export function extractHousecallIdsFromObject(value) {
       for (const [targetKey, candidates] of Object.entries(keyMap)) {
         if (result[targetKey]) continue;
         if (!value.trim()) continue;
-        if (candidates.some((candidate) => candidate.toLowerCase() === lowerKey || candidate.toLowerCase() === joinedPath)) {
+        if (
+          candidates.some((candidate) => {
+            const normalizedCandidate = candidate.toLowerCase();
+            return (
+              normalizedCandidate === lowerKey ||
+              normalizedCandidate === joinedPath ||
+              joinedPath.endsWith(`.${normalizedCandidate}`)
+            );
+          })
+        ) {
           result[targetKey] = value.trim();
         }
       }
