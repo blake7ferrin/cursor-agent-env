@@ -9,6 +9,10 @@ const runtimeTokenState = {
   expiresAtEpochMs: 0,
 };
 
+function getStaticApiKey() {
+  return process.env.HOUSECALL_PRO_API_KEY || process.env.HCP_API_KEY || '';
+}
+
 function normalizeBaseUrl(url) {
   const raw = typeof url === 'string' && url.trim() ? url.trim() : DEFAULT_BASE_URL;
   return raw.replace(/\/+$/, '');
@@ -96,7 +100,7 @@ async function refreshAccessToken() {
 }
 
 function hasStaticApiKey() {
-  return Boolean(process.env.HOUSECALL_PRO_API_KEY);
+  return Boolean(getStaticApiKey());
 }
 
 function hasBearerToken() {
@@ -110,7 +114,7 @@ function hasRefreshFlow() {
 
 async function getBearerToken(forceRefresh = false) {
   if (hasStaticApiKey()) {
-    return process.env.HOUSECALL_PRO_API_KEY;
+    return getStaticApiKey();
   }
 
   const cachedAccessToken = runtimeTokenState.accessToken || process.env.HOUSECALL_PRO_ACCESS_TOKEN || '';
@@ -129,16 +133,22 @@ async function getBearerToken(forceRefresh = false) {
   }
 
   throw new Error(
-    'Housecall credentials are missing. Set HOUSECALL_PRO_API_KEY, or OAuth env vars (HOUSECALL_PRO_CLIENT_ID, HOUSECALL_PRO_CLIENT_SECRET, HOUSECALL_PRO_REFRESH_TOKEN).',
+    'Housecall credentials are missing. Set HOUSECALL_PRO_API_KEY or HCP_API_KEY, or OAuth env vars (HOUSECALL_PRO_CLIENT_ID, HOUSECALL_PRO_CLIENT_SECRET, HOUSECALL_PRO_REFRESH_TOKEN).',
   );
 }
 
 export function getHousecallConfigSummary() {
   const baseUrl = normalizeBaseUrl(process.env.HOUSECALL_PRO_API_BASE);
+  const apiKeySource = process.env.HOUSECALL_PRO_API_KEY
+    ? 'HOUSECALL_PRO_API_KEY'
+    : process.env.HCP_API_KEY
+      ? 'HCP_API_KEY'
+      : null;
   return {
     baseUrl,
     authMode: hasStaticApiKey() ? 'api_key' : hasRefreshFlow() ? 'oauth_refresh' : hasBearerToken() ? 'access_token' : 'missing',
     hasApiKey: hasStaticApiKey(),
+    apiKeySource,
     hasAccessToken: hasBearerToken(),
     hasRefreshToken: Boolean(runtimeTokenState.refreshToken || process.env.HOUSECALL_PRO_REFRESH_TOKEN),
     hasClientCredentials: Boolean(process.env.HOUSECALL_PRO_CLIENT_ID && process.env.HOUSECALL_PRO_CLIENT_SECRET),

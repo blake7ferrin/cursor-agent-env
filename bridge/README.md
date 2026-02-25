@@ -24,6 +24,7 @@ Bridge service that connects Telegram and a simple PWA to the Cursor Cloud Agent
    - `ESTIMATOR_STORE_PATH` — optional path for persisted estimator config/catalog store (default: `bridge/data/estimator.json`).
    - `HOUSECALL_PRO_API_BASE` — optional Housecall API base URL (default: `https://api.housecallpro.com`).
    - `HOUSECALL_PRO_API_KEY` — Housecall bearer API key token (recommended if your account supports API keys).
+   - `HCP_API_KEY` — alias for `HOUSECALL_PRO_API_KEY` (supported by the bridge).
    - `HOUSECALL_PRO_ACCESS_TOKEN` — optional static bearer access token.
    - `HOUSECALL_PRO_CLIENT_ID`, `HOUSECALL_PRO_CLIENT_SECRET`, `HOUSECALL_PRO_REFRESH_TOKEN` — OAuth refresh credentials for automatic access-token renewal.
    - `HOUSECALL_PRO_TOKEN_URL` — optional OAuth token endpoint override (default: `<HOUSECALL_PRO_API_BASE>/oauth/token`).
