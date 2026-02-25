@@ -418,9 +418,12 @@ export function buildChangeoutPlan({ profile = {}, intake = {}, customer = {}, p
     complexity_adders: complexityAdders,
     vendor_quote: vendorChecklist,
     profit_targets: {
-      targetGrossMargin: config.targetGrossMargin ?? 0.5,
-      minimumGrossMargin: config.minimumGrossMargin ?? 0.4,
-      enforceMinimumGrossMargin: Boolean(config.enforceMinimumGrossMargin),
+      targetGrossMargin: config.targetGrossMargin ?? 0.4,
+      minimumGrossMargin: config.minimumGrossMargin ?? 0.3,
+      enforceMinimumGrossMargin:
+        config.enforceMinimumGrossMargin === undefined
+          ? true
+          : Boolean(config.enforceMinimumGrossMargin),
     },
     draft_estimate_request: draftEstimateRequest,
     estimate_preview: estimatePreview,
