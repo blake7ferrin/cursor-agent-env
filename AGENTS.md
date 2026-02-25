@@ -51,3 +51,5 @@ cd bridge && CURSOR_API_KEY=<your-key> npm run dev
 - There is no linter or test suite configured in this repo; `package.json` has only `start` and `dev` scripts.
 - The bridge uses ES Modules (`"type": "module"` in `package.json`). Use `import`/`export`, not `require`.
 - In-memory state (`store.js`) is lost on restart; this is by design for the current stage.
+- `AGENT_ENV_REPO` defaults to a placeholder URL. Set it to the actual repo (e.g. `https://github.com/blake7ferrin/cursor-agent-env`) or the Cursor API returns `Bad Request`.
+- `POST /chat` polls the Cursor API for up to 5 minutes. Cloud agents often take longer to boot and respond, so "Agent still running" timeouts are normal — the agent continues in the background.
