@@ -21,6 +21,7 @@ Bridge service that connects Telegram and a simple PWA to the Cursor Cloud Agent
    - `LOCAL_ACTION_ENDPOINT` — local relay endpoint to execute local actions (optional unless using `LOCAL_ACTION`).
    - `LOCAL_ACTION_AUTH_TOKEN` — optional bearer token for the local relay.
    - `REDIS_URL` — optional Redis connection URL. When set, agent mapping and rate limits are persisted in Redis.
+   - `ESTIMATOR_STORE_PATH` — optional path for persisted estimator config/catalog store (default: `bridge/data/estimator.json`).
    - `TELEGRAM_BOT_TOKEN` — (optional) from [@BotFather](https://t.me/BotFather) if you want Telegram.
 4. Run the bridge with Doppler injecting env vars:
    ```bash
@@ -46,6 +47,81 @@ Default port: 3000. Set `PORT` to change it.
 - `POST /chat` — Send a message to the agent. Body: `{ "user_id": "required-id", "message": "your text" }`. Requires auth token. Returns `{ reply, agent_id, state, parsed, dispatched }` when the agent has finished (or a partial reply on timeout). Polling is used to wait for completion.
 - `GET /agent/:userId` — Get stored `agent_id` for a user (if any). Requires auth token.
 - `GET /` — Simple PWA chat UI (served from `public/`).
+- `PUT /estimator/config` — Save pricing assumptions for one user. Body: `{ "user_id": "...", "config": { ... } }`.
+- `PUT /estimator/catalog` — Save/replace parts + equipment catalog. Body: `{ "user_id": "...", "items": [ ... ] }`.
+- `GET /estimator/profile` — Read current estimator config + catalog (`user_id` query param or `x-user-id` header).
+- `POST /estimator/estimate` — Generate deterministic estimate totals and printable HTML. Body: `{ "user_id": "...", "selections": [ ... ], "manual_items": [ ... ], "customer": { ... }, "project": { ... }, "adjustments": { ... }, "output": "json|html" }`.
+
+## HVAC estimator MVP
+
+The bridge now includes a first-pass HVAC estimator with:
+
+- Deterministic pricing math (not freeform LLM arithmetic)
+- Configurable labor burden, overhead, and target gross margin
+- Stored catalog items (equipment/parts/services) per `user_id`
+- Estimate output as JSON and print-ready HTML (can be saved as PDF in browser)
+
+### Example: set pricing config
+
+```bash
+curl -X PUT http://localhost:3000/estimator/config \
+  -H "Content-Type: application/json" \
+  -H "x-bridge-token: $BRIDGE_AUTH_TOKEN" \
+  -d '{
+    "user_id": "pwa:blake",
+    "config": {
+      "businessName": "Blake HVAC",
+      "laborRatePerHour": 95,
+      "laborBurdenRate": 0.32,
+      "overheadRate": 0.18,
+      "targetGrossMargin": 0.5,
+      "defaultTaxRate": 0.07
+    }
+  }'
+```
+
+### Example: upload catalog
+
+```bash
+curl -X PUT http://localhost:3000/estimator/catalog \
+  -H "Content-Type: application/json" \
+  -H "x-bridge-token: $BRIDGE_AUTH_TOKEN" \
+  -d '{
+    "user_id": "pwa:blake",
+    "items": [
+      {
+        "sku": "HP-3T-16",
+        "name": "3 Ton 16 SEER2 Heat Pump",
+        "itemType": "equipment",
+        "unitCost": 3200,
+        "defaultLaborHours": 6,
+        "features": ["Variable speed air handler compatible", "10 year compressor warranty"],
+        "taxable": true
+      }
+    ]
+  }'
+```
+
+### Example: generate estimate
+
+```bash
+curl -X POST http://localhost:3000/estimator/estimate \
+  -H "Content-Type: application/json" \
+  -H "x-bridge-token: $BRIDGE_AUTH_TOKEN" \
+  -d '{
+    "user_id": "pwa:blake",
+    "customer": { "name": "Jane Smith" },
+    "project": { "summary": "Replace upstairs heat pump system" },
+    "selections": [
+      { "sku": "HP-3T-16", "quantity": 1 }
+    ],
+    "adjustments": {
+      "permitFee": 250,
+      "tripCharge": 89,
+      "discountPercent": 0.05
+    }
+  }'
+```
 
 ## Telegram
 

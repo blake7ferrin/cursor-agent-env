@@ -7,6 +7,13 @@
 import express from 'express';
 import TelegramBot from 'node-telegram-bot-api';
 import * as cursor from './cursor-api.js';
+import { buildEstimate, renderEstimateHtml } from './estimator-engine.js';
+import { EstimatorValidationError } from './estimator-domain.js';
+import {
+  getEstimatorProfile,
+  replaceEstimatorCatalog,
+  upsertEstimatorConfig,
+} from './estimator-store.js';
 import { createDispatcher } from './orchestrator-dispatch.js';
 import { createRateLimiter } from './rate-limiter.js';
 import { getAgentId, setAgentId, clearAgentId } from './store.js';
@@ -69,6 +76,20 @@ function requireBridgeAuth(req, res, next) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   return next();
+}
+
+function extractUserId(req) {
+  const userId = req.body?.user_id ?? req.headers['x-user-id'];
+  if (!userId || typeof userId !== 'string') return '';
+  return userId.trim();
+}
+
+function handleEstimatorError(err, res) {
+  if (err instanceof EstimatorValidationError) {
+    return res.status(400).json({ error: err.message, details: err.details ?? null });
+  }
+  console.error(err);
+  return res.status(500).json({ error: err.message || 'Unknown estimator error' });
 }
 
 const applyRateLimit = createRateLimiter({
@@ -168,6 +189,88 @@ const dispatchOrchestratorCommands = createDispatcher({
 
 app.get('/health', (req, res) => {
   res.json({ ok: true });
+});
+
+app.put('/estimator/config', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  const userId = extractUserId(req);
+  const configPatch = req.body?.config;
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing user_id' });
+  }
+  if (!configPatch || typeof configPatch !== 'object' || Array.isArray(configPatch)) {
+    return res.status(400).json({ error: 'Missing config object' });
+  }
+  try {
+    const config = await upsertEstimatorConfig(userId, configPatch);
+    return res.json({ user_id: userId, config });
+  } catch (err) {
+    return handleEstimatorError(err, res);
+  }
+});
+
+app.put('/estimator/catalog', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  const userId = extractUserId(req);
+  const items = req.body?.items;
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing user_id' });
+  }
+  if (!Array.isArray(items)) {
+    return res.status(400).json({ error: 'Missing items array' });
+  }
+  try {
+    const catalog = await replaceEstimatorCatalog(userId, items);
+    return res.json({ user_id: userId, catalog_count: catalog.length });
+  } catch (err) {
+    return handleEstimatorError(err, res);
+  }
+});
+
+app.get('/estimator/profile', requireBridgeAuth, async (req, res) => {
+  const userId = req.query?.user_id ?? req.headers['x-user-id'];
+  if (!userId || typeof userId !== 'string') {
+    return res.status(400).json({ error: 'Missing user_id' });
+  }
+  try {
+    const profile = await getEstimatorProfile(userId);
+    return res.json({
+      user_id: userId,
+      config: profile.config,
+      catalog_count: profile.catalog.length,
+      catalog: profile.catalog,
+    });
+  } catch (err) {
+    return handleEstimatorError(err, res);
+  }
+});
+
+app.post('/estimator/estimate', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  const userId = extractUserId(req);
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing user_id' });
+  }
+  try {
+    const profile = await getEstimatorProfile(userId);
+    const estimate = buildEstimate({
+      config: profile.config,
+      catalog: profile.catalog,
+      selections: req.body?.selections,
+      manual_items: req.body?.manual_items,
+      customer: req.body?.customer,
+      project: req.body?.project,
+      adjustments: req.body?.adjustments,
+    });
+    const output = req.body?.output === 'html' ? 'html' : 'json';
+    const html = renderEstimateHtml(estimate);
+    if (output === 'html') {
+      return res.type('text/html').send(html);
+    }
+    return res.json({
+      estimate,
+      printable_html: html,
+    });
+  } catch (err) {
+    return handleEstimatorError(err, res);
+  }
 });
 
 app.post('/chat', requireBridgeAuth, applyRateLimit, async (req, res) => {
