@@ -11,6 +11,21 @@ import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import * as cursor from './cursor-api.js';
+import { buildChangeoutPlan } from './estimator-changeout.js';
+import { buildEstimate, renderEstimateHtml } from './estimator-engine.js';
+import { EstimatorValidationError } from './estimator-domain.js';
+import { getIngestReport, loadIngestedEstimatorCatalog } from './imports/catalog-adapter.js';
+import {
+  buildHousecallAppointmentLookupRequest,
+  buildHousecallUpsertPlan,
+  extractHousecallIdsFromObject,
+} from './housecall-mapper.js';
+import { getHousecallConfigSummary, housecallRequest, testHousecallConnection } from './housecall-pro.js';
+import {
+  getEstimatorProfile,
+  replaceEstimatorCatalog,
+  upsertEstimatorConfig,
+} from './estimator-store.js';
 import { createDispatcher } from './orchestrator-dispatch.js';
 import { createRateLimiter } from './rate-limiter.js';
 import { getAgentId, setAgentId, clearAgentId } from './store.js';
@@ -73,6 +88,51 @@ function requireBridgeAuth(req, res, next) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   return next();
+}
+
+function extractUserId(req) {
+  const userId = req.body?.user_id ?? req.headers['x-user-id'];
+  if (!userId || typeof userId !== 'string') return '';
+  return userId.trim();
+}
+
+function handleEstimatorError(err, res) {
+  if (err instanceof EstimatorValidationError) {
+    return res.status(400).json({ error: err.message, details: err.details ?? null });
+  }
+  console.error(err);
+  return res.status(500).json({ error: err.message || 'Unknown estimator error' });
+}
+
+function sanitizePreview(value, maxLength = 500) {
+  if (value === undefined || value === null) return value;
+  const text = typeof value === 'string' ? value : JSON.stringify(value);
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
+function asTrimmedString(value) {
+  if (value === undefined || value === null) return '';
+  const normalized = `${value}`.trim();
+  return normalized;
+}
+
+function mergeHousecallContext(primary = {}, fallback = {}) {
+  return {
+    jobId: asTrimmedString(primary.jobId || fallback.jobId),
+    estimateId: asTrimmedString(primary.estimateId || fallback.estimateId),
+    estimateOptionId: asTrimmedString(primary.estimateOptionId || fallback.estimateOptionId),
+    appointmentId: asTrimmedString(primary.appointmentId || fallback.appointmentId),
+  };
+}
+
+function isHousecallNotFound(upstream = {}) {
+  if (upstream.status === 404 || upstream.status === 410) return true;
+  if (upstream.status !== 400) return false;
+  const bodyText =
+    typeof upstream.body === 'string'
+      ? upstream.body
+      : JSON.stringify(upstream.body || {});
+  return /not[\s_-]?found|does\s+not\s+exist|unknown/i.test(bodyText);
 }
 
 const applyRateLimit = createRateLimiter({
@@ -174,6 +234,389 @@ app.get('/health', (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/integrations/housecall/config', requireBridgeAuth, (req, res) => {
+  res.json({ housecall: getHousecallConfigSummary() });
+});
+
+app.post('/integrations/housecall/test', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  try {
+    const path = typeof req.body?.path === 'string' ? req.body.path.trim() : '';
+    const result = await testHousecallConnection(path || undefined);
+    return res.status(result.ok ? 200 : 502).json({
+      ok: result.ok,
+      status: result.status,
+      statusText: result.statusText,
+      request: { method: result.method, url: result.url },
+      body: result.body,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message || 'Housecall connection test failed' });
+  }
+});
+
+app.post('/integrations/housecall/request', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  const method = `${req.body?.method || 'GET'}`.toUpperCase();
+  const path = req.body?.path;
+  if (!path || typeof path !== 'string') {
+    return res.status(400).json({ error: 'Missing path' });
+  }
+  if (!/^\/v\d+\//.test(path) && !path.startsWith('https://') && !path.startsWith('http://')) {
+    return res.status(400).json({ error: 'path must start with /v<version>/ or be an absolute URL' });
+  }
+  try {
+    const result = await housecallRequest({
+      method,
+      path,
+      query: req.body?.query,
+      body: req.body?.body,
+      headers: req.body?.headers,
+    });
+    return res.status(result.ok ? 200 : 502).json({
+      ok: result.ok,
+      status: result.status,
+      statusText: result.statusText,
+      request: { method: result.method, url: result.url },
+      body: result.body,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message || 'Housecall request failed' });
+  }
+});
+
+app.post('/integrations/housecall/resolve-context', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  try {
+    const lookupRequest = buildHousecallAppointmentLookupRequest({
+      appointment_id: req.body?.appointment_id ?? req.body?.appointmentId,
+      appointment_lookup_path: req.body?.appointment_lookup_path ?? req.body?.appointmentLookupPath,
+      appointment_lookup_method: req.body?.appointment_lookup_method ?? req.body?.appointmentLookupMethod,
+      appointment_lookup_query: req.body?.appointment_lookup_query ?? req.body?.appointmentLookupQuery,
+    });
+    const lookupResponse = await housecallRequest({
+      method: lookupRequest.method,
+      path: lookupRequest.path,
+      query: lookupRequest.query,
+    });
+    const extracted = extractHousecallIdsFromObject(lookupResponse.body);
+    return res.status(lookupResponse.ok ? 200 : 502).json({
+      ok: lookupResponse.ok,
+      status: lookupResponse.status,
+      lookup_request: lookupRequest,
+      extracted_context: extracted,
+      raw_body: lookupResponse.body,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message || 'Housecall context resolution failed' });
+  }
+});
+
+app.put('/estimator/config', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  const userId = extractUserId(req);
+  const configPatch = req.body?.config;
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing user_id' });
+  }
+  if (!configPatch || typeof configPatch !== 'object' || Array.isArray(configPatch)) {
+    return res.status(400).json({ error: 'Missing config object' });
+  }
+  try {
+    const config = await upsertEstimatorConfig(userId, configPatch);
+    return res.json({ user_id: userId, config });
+  } catch (err) {
+    return handleEstimatorError(err, res);
+  }
+});
+
+app.put('/estimator/catalog', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  const userId = extractUserId(req);
+  const items = req.body?.items;
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing user_id' });
+  }
+  if (!Array.isArray(items)) {
+    return res.status(400).json({ error: 'Missing items array' });
+  }
+  try {
+    const catalog = await replaceEstimatorCatalog(userId, items);
+    return res.json({ user_id: userId, catalog_count: catalog.length });
+  } catch (err) {
+    return handleEstimatorError(err, res);
+  }
+});
+
+app.get('/estimator/profile', requireBridgeAuth, async (req, res) => {
+  const userId = req.query?.user_id ?? req.headers['x-user-id'];
+  if (!userId || typeof userId !== 'string') {
+    return res.status(400).json({ error: 'Missing user_id' });
+  }
+  try {
+    const profile = await getEstimatorProfile(userId);
+    return res.json({
+      user_id: userId,
+      config: profile.config,
+      catalog_count: profile.catalog.length,
+      catalog: profile.catalog,
+    });
+  } catch (err) {
+    return handleEstimatorError(err, res);
+  }
+});
+
+app.post('/estimator/changeout-plan', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  const userId = extractUserId(req);
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing user_id' });
+  }
+  try {
+    const profile = await getEstimatorProfile(userId);
+    const { runtimeProfile: planProfile, catalogRuntime: importedCatalogMeta } = await resolveRuntimeEstimatorProfile(
+      profile,
+      req.body,
+    );
+
+    const plan = buildChangeoutPlan({
+      profile: planProfile,
+      intake: req.body?.intake,
+      customer: req.body?.customer,
+      project: req.body?.project,
+      limit: req.body?.limit,
+    });
+    return res.json({
+      user_id: userId,
+      plan,
+      catalog_runtime: importedCatalogMeta,
+    });
+  } catch (err) {
+    return handleEstimatorError(err, res);
+  }
+});
+
+app.post('/estimator/estimate', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  const userId = extractUserId(req);
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing user_id' });
+  }
+  try {
+    const profile = await getEstimatorProfile(userId);
+    const { runtimeProfile, catalogRuntime } = await resolveRuntimeEstimatorProfile(profile, req.body);
+    const estimate = buildEstimate({
+      config: runtimeProfile.config,
+      catalog: runtimeProfile.catalog,
+      selections: req.body?.selections,
+      manual_items: req.body?.manual_items,
+      customer: req.body?.customer,
+      project: req.body?.project,
+      adjustments: req.body?.adjustments,
+    });
+    const output = req.body?.output === 'html' ? 'html' : 'json';
+    const html = renderEstimateHtml(estimate);
+    if (output === 'html') {
+      return res.type('text/html').send(html);
+    }
+    return res.json({
+      estimate,
+      printable_html: html,
+      catalog_runtime: catalogRuntime,
+    });
+  } catch (err) {
+    return handleEstimatorError(err, res);
+  }
+});
+
+app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  const userId = extractUserId(req);
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing user_id' });
+  }
+
+  try {
+    let estimate = req.body?.estimate;
+    let catalogRuntime = null;
+    if (!estimate || typeof estimate !== 'object') {
+      const profile = await getEstimatorProfile(userId);
+      const runtime = await resolveRuntimeEstimatorProfile(profile, req.body);
+      catalogRuntime = runtime.catalogRuntime;
+      estimate = buildEstimate({
+        config: runtime.runtimeProfile.config,
+        catalog: runtime.runtimeProfile.catalog,
+        selections: req.body?.selections,
+        manual_items: req.body?.manual_items,
+        customer: req.body?.customer,
+        project: req.body?.project,
+        adjustments: req.body?.adjustments,
+      });
+    }
+
+    const housecallOpts = req.body?.housecall && typeof req.body.housecall === 'object' ? req.body.housecall : {};
+    const directContext = {
+      jobId: asTrimmedString(housecallOpts.job_id ?? housecallOpts.jobId),
+      estimateId: asTrimmedString(housecallOpts.estimate_id ?? housecallOpts.estimateId),
+      estimateOptionId: asTrimmedString(
+        housecallOpts.estimate_option_id ?? housecallOpts.estimateOptionId,
+      ),
+      appointmentId: asTrimmedString(housecallOpts.appointment_id ?? housecallOpts.appointmentId),
+    };
+    let resolvedContext = mergeHousecallContext(directContext, {});
+    let lookup = null;
+    const hasLookupTemplate = Boolean(
+      housecallOpts.appointment_lookup_path ||
+        housecallOpts.appointmentLookupPath ||
+        process.env.HOUSECALL_PRO_APPOINTMENT_LOOKUP_PATH,
+    );
+
+    const shouldLookupFromAppointment =
+      !!resolvedContext.appointmentId &&
+      !resolvedContext.estimateId &&
+      hasLookupTemplate &&
+      (housecallOpts.resolve_context === true ||
+        housecallOpts.resolveContext === true ||
+        housecallOpts.auto_upsert !== false ||
+        housecallOpts.autoUpsert !== false);
+
+    if (shouldLookupFromAppointment) {
+      const lookupRequest = buildHousecallAppointmentLookupRequest({
+        appointment_id: resolvedContext.appointmentId,
+        appointment_lookup_path: housecallOpts.appointment_lookup_path ?? housecallOpts.appointmentLookupPath,
+        appointment_lookup_method:
+          housecallOpts.appointment_lookup_method ?? housecallOpts.appointmentLookupMethod,
+        appointment_lookup_query:
+          housecallOpts.appointment_lookup_query ?? housecallOpts.appointmentLookupQuery,
+      });
+      const lookupResponse = await housecallRequest({
+        method: lookupRequest.method,
+        path: lookupRequest.path,
+        query: lookupRequest.query,
+      });
+      lookup = {
+        ok: lookupResponse.ok,
+        status: lookupResponse.status,
+        request: lookupRequest,
+        body_preview: sanitizePreview(lookupResponse.body, 1500),
+      };
+      if (lookupResponse.ok && lookupResponse.body && typeof lookupResponse.body === 'object') {
+        const extractedContext = extractHousecallIdsFromObject(lookupResponse.body);
+        resolvedContext = mergeHousecallContext(resolvedContext, extractedContext);
+      }
+    }
+
+    const exportPlan = buildHousecallUpsertPlan(estimate, {
+      endpoint: housecallOpts.endpoint,
+      method: housecallOpts.method,
+      mode: housecallOpts.mode,
+      autoUpsert: housecallOpts.auto_upsert ?? housecallOpts.autoUpsert,
+      customerId: housecallOpts.customer_id ?? housecallOpts.customerId,
+      jobId: resolvedContext.jobId,
+      estimateId: resolvedContext.estimateId,
+      estimateOptionId: resolvedContext.estimateOptionId,
+      appointmentId: resolvedContext.appointmentId,
+      optionName: housecallOpts.option_name ?? housecallOpts.optionName,
+      note: housecallOpts.note,
+      payloadOverride: housecallOpts.payload_override ?? housecallOpts.payloadOverride,
+      createEstimatePath: housecallOpts.create_estimate_path ?? housecallOpts.createEstimatePath,
+      addToJobPath: housecallOpts.add_to_job_path ?? housecallOpts.addToJobPath,
+      updateEstimatePath: housecallOpts.update_estimate_path ?? housecallOpts.updateEstimatePath,
+      addOptionNotePath: housecallOpts.add_option_note_path ?? housecallOpts.addOptionNotePath,
+    });
+
+    if (housecallOpts.dry_run === true || housecallOpts.dryRun === true) {
+      return res.json({
+        dry_run: true,
+        estimate,
+        catalog_runtime: catalogRuntime,
+        upsert_strategy: exportPlan.strategy,
+        resolved_context: exportPlan.context,
+        lookup,
+        housecall_plan: exportPlan.requests.map((requestPayload) => ({
+          mode: requestPayload.mode,
+          method: requestPayload.method,
+          path: requestPayload.path,
+          path_template: requestPayload.path_template,
+          payload: requestPayload.payload,
+        })),
+      });
+    }
+
+    const attempts = [];
+    let selectedRequest = null;
+    let selectedResponse = null;
+
+    for (let index = 0; index < exportPlan.requests.length; index += 1) {
+      const requestPayload = exportPlan.requests[index];
+      const upstream = await housecallRequest({
+        method: requestPayload.method,
+        path: requestPayload.path,
+        body: requestPayload.payload,
+      });
+
+      attempts.push({
+        mode: requestPayload.mode,
+        method: requestPayload.method,
+        path: requestPayload.path,
+        path_template: requestPayload.path_template,
+        ok: upstream.ok,
+        status: upstream.status,
+        statusText: upstream.statusText,
+        response_preview: sanitizePreview(upstream.body, 1000),
+      });
+
+      if (upstream.ok) {
+        selectedRequest = requestPayload;
+        selectedResponse = upstream;
+        break;
+      }
+
+      const hasRemainingAttempts = index < exportPlan.requests.length - 1;
+      if (!hasRemainingAttempts) {
+        selectedRequest = requestPayload;
+        selectedResponse = upstream;
+        break;
+      }
+      if (exportPlan.strategy !== 'auto_upsert') {
+        selectedRequest = requestPayload;
+        selectedResponse = upstream;
+        break;
+      }
+      if (!isHousecallNotFound(upstream)) {
+        selectedRequest = requestPayload;
+        selectedResponse = upstream;
+        break;
+      }
+    }
+
+    const success = Boolean(selectedResponse?.ok);
+
+    return res.status(success ? 200 : 502).json({
+      estimate,
+      catalog_runtime: catalogRuntime,
+      upsert_strategy: exportPlan.strategy,
+      resolved_context: exportPlan.context,
+      lookup,
+      attempts,
+      housecall_request: selectedRequest
+        ? {
+            mode: selectedRequest.mode,
+            method: selectedRequest.method,
+            path: selectedRequest.path,
+            path_template: selectedRequest.path_template,
+            payload_preview: sanitizePreview(selectedRequest.payload, 2000),
+          }
+        : null,
+      housecall_response: selectedResponse
+        ? {
+            ok: selectedResponse.ok,
+            status: selectedResponse.status,
+            statusText: selectedResponse.statusText,
+            body: selectedResponse.body,
+          }
+        : null,
+    });
+  } catch (err) {
+    return handleEstimatorError(err, res);
+  }
+});
+
 app.post('/chat', requireBridgeAuth, applyRateLimit, async (req, res) => {
   const userId = req.body.user_id ?? req.headers['x-user-id'];
   const message = req.body.message ?? req.body.text;
@@ -212,36 +655,136 @@ app.get('/agent/:userId', requireBridgeAuth, async (req, res) => {
 
 const __dirnameBridge = dirname(fileURLToPath(import.meta.url));
 
-app.post('/ingest', requireBridgeAuth, async (req, res) => {
-  const only = req.body?.only ?? req.query?.only;
-  const args = only ? ['imports/ingest.js', '--only', only] : ['imports/ingest.js'];
+function mergeCatalogs(primary = [], secondary = []) {
+  const merged = new Map();
+  for (const item of Array.isArray(primary) ? primary : []) {
+    if (!item?.sku) continue;
+    merged.set(item.sku, item);
+  }
+  for (const item of Array.isArray(secondary) ? secondary : []) {
+    if (!item?.sku) continue;
+    merged.set(item.sku, item);
+  }
+  return Array.from(merged.values());
+}
+
+function shouldRefreshImportedCatalog(report, profileName) {
+  if (!report || typeof report !== 'object') return true;
+  if ((report.profile || '') !== profileName) return true;
+  if (Array.isArray(report.errors) && report.errors.length > 0) return true;
+  if (!Array.isArray(report.filesProcessed) || report.filesProcessed.length === 0) return true;
+  return false;
+}
+
+function runIngestScript(options = {}) {
+  const args = ['imports/ingest.js'];
+  if (options.only) args.push('--only', `${options.only}`);
+  if (options.profile) args.push('--profile', `${options.profile}`);
+  if (options.profilePath) args.push('--profile-path', `${options.profilePath}`);
+
   return new Promise((resolve) => {
     const child = spawn('node', args, { cwd: __dirnameBridge, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '';
     let err = '';
-    child.stdout.on('data', (d) => { out += d; });
-    child.stderr.on('data', (d) => { err += d; });
-    child.on('close', (code) => {
-      const reportPath = join(__dirnameBridge, 'imports', 'validation-report.json');
-      let report = null;
-      if (existsSync(reportPath)) {
-        try {
-          report = JSON.parse(readFileSync(reportPath, 'utf8'));
-        } catch (e) {
-          report = { error: 'Failed to read report', stderr: err };
-        }
-      } else {
-        report = { error: 'Ingest did not produce report', stdout: out, stderr: err };
-      }
-      res.status(code === 0 ? 200 : 422).json({
-        ok: code === 0,
-        exitCode: code,
-        report,
-        stdout: out.trim(),
-        stderr: err.trim() || undefined,
-      });
-      resolve();
+    child.stdout.on('data', (d) => {
+      out += d;
     });
+    child.stderr.on('data', (d) => {
+      err += d;
+    });
+    child.on('close', (code) => {
+      resolve({
+        code: Number.isFinite(code) ? code : 1,
+        stdout: out.trim(),
+        stderr: err.trim(),
+      });
+    });
+  });
+}
+
+async function resolveRuntimeEstimatorProfile(baseProfile, rawBody) {
+  const body = rawBody && typeof rawBody === 'object' ? rawBody : {};
+  const catalogProfile = asTrimmedString(body.catalog_profile) || 'preferred';
+  const useImportedCatalog = body.use_imported_catalog !== false;
+  const includeUserCatalog = body.include_user_catalog !== false;
+  const refreshImportCatalog = body.refresh_import_catalog !== false;
+
+  if (!useImportedCatalog) {
+    return {
+      runtimeProfile: baseProfile,
+      catalogRuntime: {
+        enabled: false,
+        profile: null,
+        imported_catalog_count: 0,
+        effective_catalog_count: Array.isArray(baseProfile?.catalog) ? baseProfile.catalog.length : 0,
+      },
+    };
+  }
+
+  let refreshResult = null;
+  const reportBefore = getIngestReport();
+  if (refreshImportCatalog && shouldRefreshImportedCatalog(reportBefore, catalogProfile)) {
+    refreshResult = await runIngestScript({ profile: catalogProfile });
+  }
+
+  const importedCatalog = loadIngestedEstimatorCatalog(catalogProfile);
+  const mergedCatalog = importedCatalog.length
+    ? includeUserCatalog
+      ? mergeCatalogs(importedCatalog, baseProfile.catalog)
+      : importedCatalog
+    : baseProfile.catalog;
+
+  const runtimeProfile = {
+    ...baseProfile,
+    catalog: mergedCatalog,
+  };
+  const reportAfter = getIngestReport();
+
+  return {
+    runtimeProfile,
+    catalogRuntime: {
+      enabled: true,
+      profile: catalogProfile,
+      imported_catalog_count: importedCatalog.length,
+      effective_catalog_count: runtimeProfile.catalog.length,
+      include_user_catalog: includeUserCatalog,
+      refreshed: Boolean(refreshResult),
+      refresh_ok: refreshResult ? refreshResult.code === 0 : true,
+      refresh_exit_code: refreshResult ? refreshResult.code : 0,
+      refresh_stderr: refreshResult?.stderr || undefined,
+      report_profile: reportAfter?.profile || reportBefore?.profile || undefined,
+      fallback_to_user_catalog: importedCatalog.length === 0,
+    },
+  };
+}
+
+app.post('/ingest', requireBridgeAuth, async (req, res) => {
+  const only = req.body?.only ?? req.query?.only;
+  const profile = req.body?.profile ?? req.query?.profile;
+  const profilePath = req.body?.profile_path ?? req.query?.profile_path;
+  const ingestResult = await runIngestScript({ only, profile, profilePath });
+  const reportPath = join(__dirnameBridge, 'imports', 'validation-report.json');
+  let report = null;
+  if (existsSync(reportPath)) {
+    try {
+      report = JSON.parse(readFileSync(reportPath, 'utf8'));
+    } catch (_) {
+      report = { error: 'Failed to read report', stderr: ingestResult.stderr };
+    }
+  } else {
+    report = {
+      error: 'Ingest did not produce report',
+      stdout: ingestResult.stdout,
+      stderr: ingestResult.stderr,
+    };
+  }
+
+  return res.status(ingestResult.code === 0 ? 200 : 422).json({
+    ok: ingestResult.code === 0,
+    exitCode: ingestResult.code,
+    report,
+    stdout: ingestResult.stdout,
+    stderr: ingestResult.stderr || undefined,
   });
 });
 
