@@ -4,6 +4,9 @@ bridge/.env
 bridge/.env.*
 *.log
 
+# Ingestion: ignore large zip uploads; use unpacked files in bridge/imports/incoming/
+cursor-ingestion-*.zip
+
 # OS
 .DS_Store
 Thumbs.db

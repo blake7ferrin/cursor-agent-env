@@ -1,0 +1,33 @@
+﻿Generated: 2026-02-25T00:13:17.2675385-07:00
+Source folder searched: C:\Users\blake\Downloads
+
+Requested categories:
+- AC Pro equipment/pricing export
+- Day & Night equipment/pricing export
+- options/adders sheet
+- warranty/spec brochure PDFs
+- current quote sheet format
+
+Found and included:
+- C:\Users\blake\Downloads\2022_PartsCatalog.pdf
+- C:\Users\blake\Downloads\A2L_ACProMiniSplit2025.08.pdf
+- C:\Users\blake\Downloads\ARIZONA EQUIPMENT - A PRICED GUIDE.pdf
+- C:\Users\blake\Downloads\HVAC Installers Pricing 10_4_24 (1).pdf
+- C:\Users\blake\Downloads\PolarAir_ACPro_Equipment_Pricing_v2.csv
+- C:\Users\blake\Downloads\PolarAir_ACPro_Equipment_v3.csv
+- C:\Users\blake\Downloads\PolarAir_ACPro_Equipment_v6_NO_REG_WARRANTY.csv
+- C:\Users\blake\Downloads\PolarAir_ACPro_Equipment_v7_AHRI_SEER2_ALL_TONNAGES.csv
+- C:\Users\blake\Downloads\PolarAir_ACPro_Equipment_v7_AHRI_SEER2_ALL_TONNAGES_CLEAN.csv
+- C:\Users\blake\Downloads\PolarAir_ChangeOut_Installs_v2.csv
+- C:\Users\blake\Downloads\PolarAir_ChangeOut_Installs_v3_SALES_DESCRIPTIONS.csv
+- C:\Users\blake\Downloads\PolarAir_ChangeOut_Pricebook_v1.csv
+- C:\Users\blake\Downloads\PolarAir_pricebook_export.csv
+
+Not found by filename scan in Desktop/Documents/Downloads/OneDrive:
+- Day & Night export (no matches)
+- Explicit options/adders sheet (no exact filename matches)
+- Explicit quote sheet format file (no exact filename matches)
+
+Added on 2026-02-25T00:21:44.7961220-07:00:
+- google-sheet_1fhBMSr4xbh28MJs1R_EhNLVvfEXzpn5KKE7WpUS0TLc.xlsx
+- google-sheet-link.txt

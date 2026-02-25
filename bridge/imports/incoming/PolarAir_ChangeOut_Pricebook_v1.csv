@@ -1,0 +1,15 @@
+category,subcategory_1,name,description,price,cost,taxable,unit_of_measure,online_booking_enabled
+CHANGE-OUT INSTALLS,SPLIT SYSTEM,Split System Change-Out (2–3 Ton),"Remove and replace existing split system. Includes standard reconnection and base installation materials. Does not include access difficulty, electrical, duct modifications, or specialty materials.",3214.29,2000,false,Each,false
+CHANGE-OUT INSTALLS,SPLIT SYSTEM,Split System Change-Out (4–5 Ton),"Remove and replace existing split system. Includes standard reconnection and base installation materials. Does not include access difficulty, electrical, duct modifications, or specialty materials.",3214.29,2000,false,Each,false
+CHANGE-OUT INSTALLS,PACKAGE UNIT,Package Unit Change-Out (2–3 Ton),"Remove and replace existing package unit. Includes standard reconnection, roof sealing, and base installation materials. Does not include crane, electrical upgrades, or specialty materials.",2428.57,1700,false,Each,false
+CHANGE-OUT INSTALLS,PACKAGE UNIT,Package Unit Change-Out (4–5 Ton),"Remove and replace existing package unit. Includes standard reconnection, roof sealing, and base installation materials. Does not include crane, electrical upgrades, or specialty materials.",2428.57,1700,false,Each,false
+ADDERS – LABOR & ACCESS,ACCESS CONDITIONS,Tight Attic,"Installation performed in limited attic access conditions.",357.14,250,false,Each,false
+ADDERS – LABOR & ACCESS,ACCESS CONDITIONS,Tight Attic – Build in Place,"System must be disassembled and reassembled in attic.",428.57,300,false,Each,false
+ADDERS – LABOR & ACCESS,SCHEDULING,Weekend Install – Saturday,"Installation performed on Saturday.",428.57,300,false,Each,false
+ADDERS – LABOR & ACCESS,SCHEDULING,Weekend Install – Sunday,"Installation performed on Sunday.",857.14,600,false,Each,false
+ADDERS – ELECTRICAL & SYSTEM,CHANGE-OUT WORK,Condenser Only Change-Out,"Remove and replace outdoor condenser only.",1142.86,800,false,Each,false
+ADDERS – ELECTRICAL & SYSTEM,CHANGE-OUT WORK,Coil Only Change-Out (Upflow / Horizontal),"Remove and replace indoor evaporator coil only.",1357.14,950,false,Each,false
+ADDERS – ELECTRICAL & SYSTEM,CHANGE-OUT WORK,Coil Only Change-Out (Attic / Package),"Remove and replace evaporator coil in attic or package system.",1142.86,800,false,Each,false
+ADDERS – MATERIALS & FABRICATION,MATERIALS,Package Unit Stand,"Prefabricated package unit equipment stand.",168.57,118,true,Each,false
+ADDERS – MATERIALS & FABRICATION,MATERIALS,Side-by-Side Radius Elbow,"Side-by-side duct radius elbow for airflow transition.",470.00,329,true,Each,false
+ADDERS – MATERIALS & FABRICATION,MATERIALS,Twist Radius Elbow,"Twist duct radius elbow for directional airflow transition.",541.43,379,true,Each,false

@@ -1,0 +1,14 @@
+industry,category,subcategory_1,name,description,price,cost,taxable,unit_of_measure,online_booking_enabled
+Heating and Air Conditioning,CHANGE-OUT INSTALLS,SPLIT SYSTEM,Split System Change-Out (2–3 Ton),"Remove and replace existing split system. Includes standard reconnection and base installation materials.",2666.67,2000,false,Each,false
+Heating and Air Conditioning,CHANGE-OUT INSTALLS,SPLIT SYSTEM,Split System Change-Out (4–5 Ton),"Remove and replace existing split system. Includes standard reconnection and base installation materials.",2666.67,2000,false,Each,false
+Heating and Air Conditioning,CHANGE-OUT INSTALLS,PACKAGE UNIT,Package Unit Change-Out (2–3 Ton),"Remove and replace existing package unit. Includes standard reconnection and roof sealing.",2266.67,1700,false,Each,false
+Heating and Air Conditioning,CHANGE-OUT INSTALLS,PACKAGE UNIT,Package Unit Change-Out (4–5 Ton),"Remove and replace existing package unit. Includes standard reconnection and roof sealing.",2266.67,1700,false,Each,false
+
+Heating and Air Conditioning,ADDERS – LABOR & ACCESS,ACCESS CONDITIONS,Tight Attic,"Installation performed in limited attic access conditions.",333.33,250,false,Each,false
+Heating and Air Conditioning,ADDERS – LABOR & ACCESS,ACCESS CONDITIONS,Tight Attic – Build in Place,"System must be assembled in attic.",400.0,300,false,Each,false
+Heating and Air Conditioning,ADDERS – LABOR & ACCESS,SCHEDULING,Weekend Install – Saturday,"Installation performed on Saturday.",400.0,300,false,Each,false
+Heating and Air Conditioning,ADDERS – LABOR & ACCESS,SCHEDULING,Weekend Install – Sunday,"Installation performed on Sunday.",800.0,600,false,Each,false
+
+Heating and Air Conditioning,ADDERS – MATERIALS & FABRICATION,MATERIALS,Package Unit Stand,"Prefabricated package unit stand.",157.33,118,true,Each,false
+Heating and Air Conditioning,ADDERS – MATERIALS & FABRICATION,MATERIALS,Side-by-Side Radius Elbow,"Side-by-side duct radius elbow.",438.67,329,true,Each,false
+Heating and Air Conditioning,ADDERS – MATERIALS & FABRICATION,MATERIALS,Twist Radius Elbow,"Twist duct radius elbow.",505.33,379,true,Each,false
