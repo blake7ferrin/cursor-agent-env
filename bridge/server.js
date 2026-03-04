@@ -59,6 +59,8 @@ const PORT = process.env.PORT || 3000;
 const apiKey = process.env.CURSOR_API_KEY;
 const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
 const agentEnvRepo = process.env.AGENT_ENV_REPO || 'https://github.com/your-org/cursor-agent-env';
+/** Optional: branch or ref for the agent repo (e.g. cursor/hvac-pricing-agent-3304). When set, new agents use this ref; unset = API default branch (usually main). */
+const agentEnvRef = process.env.AGENT_ENV_REF || null;
 const bridgeAuthToken = process.env.BRIDGE_AUTH_TOKEN;
 const localActionEndpoint = process.env.LOCAL_ACTION_ENDPOINT;
 const localActionAuthToken = process.env.LOCAL_ACTION_AUTH_TOKEN;
@@ -181,6 +183,7 @@ async function sendToAgent(userId, text) {
     } else {
       res = await cursor.launchAgent(apiKey, {
         repository: agentEnvRepo,
+        ...(agentEnvRef && { ref: agentEnvRef }),
         promptText: prompt,
       });
       agentId = res.id ?? res.agent_id;
@@ -1207,7 +1210,7 @@ const isServerEntry =
 if (isServerEntry) {
   app.listen(PORT, () => {
     console.log(
-      `Bridge listening on port ${PORT}. AGENT_ENV_REPO=${agentEnvRepo} ` +
+      `Bridge listening on port ${PORT}. AGENT_ENV_REPO=${agentEnvRepo}${agentEnvRef ? ` AGENT_ENV_REF=${agentEnvRef}` : ''} ` +
         `SUBAGENT_REPOS=${subagentRepoAllowlist.length} LOCAL_ACTIONS=${localActionAllowlist.length}`,
     );
   });

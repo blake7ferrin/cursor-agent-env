@@ -17,6 +17,7 @@ Secrets are not always available from the environment (e.g. in CI or when the br
 3. Add secrets in the Doppler dashboard or via CLI:
    - `CURSOR_API_KEY` — your Cursor Cloud Agents API key (`key_...`).
    - `AGENT_ENV_REPO` — GitHub URL of this repo (e.g. `https://github.com/your-org/cursor-agent-env`).
+   - `AGENT_ENV_REF` — optional; branch or ref for the agent repo (e.g. `cursor/hvac-pricing-agent-3304`). When set, new Telegram/PWA agents use this ref; when unset, the Cursor API uses the repo’s default branch (usually `main`). Use this so the agent has the latest docs/memory without merging to main.
    - `BRIDGE_AUTH_TOKEN` — required token for HTTP clients (`/chat`, `/agent/:userId`). Send as `x-bridge-token` or `Authorization: Bearer ...`.
    - `SUBAGENT_REPO_ALLOWLIST`, `LOCAL_ACTION_ALLOWLIST`, `LOCAL_ACTION_ENDPOINT`, `LOCAL_ACTION_AUTH_TOKEN` — optional orchestrator settings.
    - `REDIS_URL` — optional Redis for persistent agent mapping, rate limiting, **async job state**, and **idempotency cache**. When unset, in-memory (and file for agent mapping) fallbacks are used.
@@ -53,6 +54,7 @@ To use the bridge only as a Telegram bot (no PWA/HTTP needed for chat):
 2. **Set env vars** (Doppler or `bridge/.env`):
    - `CURSOR_API_KEY` — required (from [Cursor Dashboard → Integrations](https://cursor.com/dashboard?tab=integrations)).
    - `AGENT_ENV_REPO` — your repo URL (e.g. `https://github.com/blake7ferrin/cursor-agent-env`); otherwise the API may return Bad Request.
+   - `AGENT_ENV_REF` — optional; set to your feature branch (e.g. `cursor/hvac-pricing-agent-3304`) so the Telegram agent uses that branch’s MEMORY.md, docs, and skills (e.g. Housecall/MCP). Otherwise the agent uses the repo’s default branch.
    - `TELEGRAM_BOT_TOKEN` — the token from BotFather.
    - `BRIDGE_AUTH_TOKEN` — required by the server but only for HTTP endpoints; set any secret string if you still want to call `/chat` or `/health` from scripts.
 3. **Run the bridge** from `bridge/`:
@@ -63,6 +65,8 @@ To use the bridge only as a Telegram bot (no PWA/HTTP needed for chat):
 4. **Chat** with your bot in Telegram. Each chat gets a persistent agent (`user_id = telegram:<chatId>`). Replies are sent back when the agent finishes (or "Agent still running." if it’s taking longer than the poll window).
 
 The bot uses long-polling; no webhook or public URL is required.
+
+**Getting the Telegram agent Housecall/MCP context:** The agent loads the repo from the branch chosen by the Cursor API (default branch when `AGENT_ENV_REF` is unset, usually `main`). To use your latest MEMORY.md, docs (e.g. HOUSECALL-AGENT.md, MCP-TOOLS.md), and skills: **(1)** Set `AGENT_ENV_REF` to your branch (e.g. `cursor/hvac-pricing-agent-3304`) in Doppler or `.env`, then restart the bridge — new chats (and new agents) will use that branch. **(2)** Or merge your feature branch into `main` and push so the default branch has the updates; then restart the bridge so new agents pick up the new main.
 
 ## Endpoints
 
