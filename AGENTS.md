@@ -21,7 +21,8 @@ If **MEMORY.md** or **memory/YYYY-MM-DD.md** does not exist yet, create it with 
 ## Skills and rules
 
 - Follow project rules in `.cursor/rules/` and use skills in `.cursor/skills/` when they apply.
-- When outputting structured commands for an external bridge (e.g. launching subagents or local actions), use the format defined in **docs/orchestrator-protocol.md**.
+- When outputting structured commands for the bridge (e.g. sending an estimate to Housecall Pro), use the format in **docs/orchestrator-protocol.md** (including `HOUSECALL_EXPORT`). Do not assume integrations are missing—Housecall is wired in the bridge; see MEMORY.md section "Housecall Pro integration".
+- When launching subagents or local actions, use the format defined in **docs/orchestrator-protocol.md**.
 
 ## Cursor Cloud specific instructions
 
