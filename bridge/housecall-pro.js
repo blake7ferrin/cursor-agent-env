@@ -210,3 +210,17 @@ export async function testHousecallConnection(path) {
     query: { page_size: 1 },
   });
 }
+
+/**
+ * List customers from Housecall Pro. Pass query params supported by the API (e.g. page_size, page, search).
+ * @param {{ page?: number, page_size?: number, search?: string }} query
+ * @returns {Promise<{ ok: boolean, status: number, body?: { customers?: object[], data?: object[] } }>}
+ */
+export async function listHousecallCustomers(query = {}) {
+  const path = '/v1/customers';
+  const queryParams = {};
+  if (query.page_size != null) queryParams.page_size = query.page_size;
+  if (query.page != null) queryParams.page = query.page;
+  if (query.search != null && String(query.search).trim()) queryParams.search = String(query.search).trim();
+  return housecallRequest({ path, method: 'GET', query: Object.keys(queryParams).length ? queryParams : undefined });
+}

@@ -374,6 +374,7 @@ export function renderEstimateHtml(estimate) {
             ${features}
           </td>
           <td>${line.quantity}</td>
+          <td style="text-align:right">${formatMoney(line.costs.totalCost, estimate.currency)}</td>
           <td style="text-align:right">${formatMoney(line.costs.targetSellPrice, estimate.currency)}</td>
         </tr>
       `;
@@ -415,7 +416,8 @@ export function renderEstimateHtml(estimate) {
         <th>Code</th>
         <th>Description</th>
         <th>Qty</th>
-        <th style="text-align:right">Target Sell</th>
+        <th style="text-align:right">Cost</th>
+        <th style="text-align:right">Price</th>
       </tr>
     </thead>
     <tbody>

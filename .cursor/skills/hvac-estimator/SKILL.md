@@ -48,15 +48,24 @@ Assuming bridge is running and `BRIDGE_AUTH_TOKEN` is available:
    - `POST /estimator/estimate`
    - Use `output: "html"` for a printable document.
 5. Export to Housecall Pro CRM:
-   - `POST /estimator/export/housecall`
-   - Use `housecall.dry_run=true` before live export.
-   - Prefer `housecall.auto_upsert=true` (or `housecall.mode="auto_upsert"`) so the bridge picks the best target automatically.
-   - Set `housecall.mode` for context-aware exports:
-     - `update_estimate` when estimate already exists
-     - `add_to_job` when adding a new estimate to an existing job
+   - **Housecall Pro is already integrated in the bridge.** When the user is on Telegram or the PWA, **always** use the wired integration by outputting one line—do **not** write your own script or say no integration exists.
+   - Output this so the bridge runs the export:
+     ```
+     HOUSECALL_EXPORT: <compact one-line JSON>
+     ```
+     Omit `user_id` when the user is on Telegram (the bridge fills it in). Use `housecall.dry_run: true` for a test run first. Example:
+     ```
+     HOUSECALL_EXPORT: {"customer":{"name":"Jane Smith"},"project":{"summary":"Replace heat pump"},"selections":[{"sku":"HP-3T-16","quantity":1}],"housecall":{"dry_run":true}}
+     ```
+     Then, if the user confirms, output the same without `dry_run` to send live. The bridge will run the export and add a block to your reply: customer (existing / new / multiple matches), summary (N items · $X total), notifications on/off, and status.
+   - **Payload shape:** `customer` (name, optional housecall_customer_id), `project` (summary, optional housecall_job_id, housecall_estimate_id), `selections` (array of { sku, quantity }), optional `manual_items`, `adjustments`, and `housecall` (dry_run, mode, job_id, estimate_id, **notifications_enabled** true/false, etc.).
+   - **Prompts:** Ask “Use existing customer [Name] or create new?” when the bridge might match an existing customer. Ask “Enable notifications for this customer?” and set `housecall.notifications_enabled: true` or `false` in the payload. The Telegram reply will show which customer was used and whether notifications are on or off.
+   - If the user is **not** on the bridge (e.g. only in Cursor IDE), tell them to run the export via the bridge (e.g. Telegram) or use curl to `POST /estimator/export/housecall` with the same payload.
+   - Prefer `housecall.auto_upsert=true` (or omit; it's default) so the bridge picks the best target. Use `housecall.mode` for context-aware exports: `update_estimate`, `add_to_job`, etc.
 
 ## Guardrails
 
+- **Housecall:** Use the bridge’s existing Housecall Pro integration (output `HOUSECALL_EXPORT: {...}`). Do not write your own Housecall API script or assume no integration exists; see MEMORY.md “Housecall Pro integration”.
 - Do not invent SKU costs, labor rates, or margin targets.
 - If any required financial inputs are missing, return a draft + missing fields list.
 - Highlight when discounts push achieved margin below the target.

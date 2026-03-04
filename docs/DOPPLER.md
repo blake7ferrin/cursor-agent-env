@@ -1,12 +1,11 @@
 # Doppler setup for the bridge
 
-The bridge runs with secrets from [Doppler](https://doppler.com) so you never store API keys in code or in this repo.
+The bridge runs with secrets from [Doppler](https://doppler.com) so the process always has `CURSOR_API_KEY`, `BRIDGE_AUTH_TOKEN`, etc. — even when the environment (e.g. CI, or an agent-spawned process) doesn’t have them.
 
 ## 1. Install Doppler CLI
-
-- **Windows:** `scoop install doppler` or download from [Doppler CLI](https://docs.doppler.com/docs/install-cli).
-- **macOS:** `brew install dopplerhq/cli/doppler`.
-- **Linux:** See [Install CLI](https://docs.doppler.com/docs/install-cli).
+   - **Windows:** `scoop install doppler` or download from [Doppler CLI](https://docs.doppler.com/docs/install-cli).
+   - **macOS:** `brew install dopplerhq/cli/doppler`.
+   - **Linux:** See [Install CLI](https://docs.doppler.com/docs/install-cli).
 
 ## 2. Log in and create project
 
@@ -56,4 +55,6 @@ Doppler injects the variables into the process; the bridge reads `process.env.CU
 
 ## Alternatives
 
-If you do not use Doppler, set the same env vars in your shell or in a `.env` file (and add `.env` to `.gitignore`). Never commit `.env` or API keys.
+- **Local `bridge/.env`:** The bridge loads `bridge/.env` if present (gitignored). Use when running locally and you control the file.
+- **Shell:** Export the same vars in your shell before running the bridge.
+- **Never** commit `.env` or API keys.

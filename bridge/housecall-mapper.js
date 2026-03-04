@@ -30,6 +30,10 @@ function compactObject(input) {
 function buildDescription(line) {
   const parts = [];
   if (line.code) parts.push(`Code: ${line.code}`);
+  const costTotal = line?.costs?.totalCost;
+  if (costTotal !== undefined && costTotal !== null && Number.isFinite(Number(costTotal))) {
+    parts.push(`Cost: $${Number(costTotal).toFixed(2)}`);
+  }
   if (line.notes) parts.push(line.notes);
   if (Array.isArray(line.features) && line.features.length) {
     parts.push(`Features: ${line.features.join(', ')}`);
@@ -41,6 +45,7 @@ function toHousecallLineItem(line, index) {
   const quantity = Number(line.quantity || 1);
   const safeQty = quantity > 0 ? quantity : 1;
   const unitPrice = roundMoney(Number(line?.costs?.targetSellPrice || 0) / safeQty);
+  const costTotal = roundMoney(line?.costs?.totalCost || 0);
 
   return compactObject({
     name: line.name || `Line item ${index + 1}`,
@@ -50,7 +55,7 @@ function toHousecallLineItem(line, index) {
     taxable: line.taxable !== false,
     metadata: {
       source_item_type: line.itemType || '',
-      source_cost_total: roundMoney(line?.costs?.totalCost || 0),
+      source_cost_total: costTotal,
       source_labor_hours: Number(line.laborHours || 0),
     },
   });
@@ -146,6 +151,9 @@ export function buildHousecallEstimatePayload(estimate, options = {}) {
     phone_number: customer.phone_number,
     company: customer.company,
     address: customer.address,
+    ...(options.notificationsEnabled === true || options.notificationsEnabled === false
+      ? { notifications_enabled: options.notificationsEnabled }
+      : {}),
   });
   const hasCustomerDraft = customerDraft && Object.keys(customerDraft).length > 0;
 
@@ -165,6 +173,9 @@ export function buildHousecallEstimatePayload(estimate, options = {}) {
     note,
     message: projectSummary,
     tax_rate: taxRate,
+    ...(options.notificationsEnabled === true || options.notificationsEnabled === false
+      ? { notifications_enabled: options.notificationsEnabled }
+      : {}),
     options: [
       {
         name: optionName,

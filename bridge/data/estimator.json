@@ -1,0 +1,23 @@
+{
+  "users": {
+    "idem-user": {
+      "config": {
+        "businessName": "HVAC Business",
+        "currency": "USD",
+        "laborRatePerHour": 100,
+        "laborBurdenRate": 0,
+        "overheadRate": 0,
+        "contingencyRate": 0,
+        "targetGrossMargin": 0.4,
+        "minimumGrossMargin": 0.3,
+        "enforceMinimumGrossMargin": true,
+        "defaultTaxRate": 0.09,
+        "defaultPermitFee": 0,
+        "defaultTripCharge": 0,
+        "estimateExpirationDays": 30,
+        "paymentTerms": "50% deposit due at scheduling, balance due at completion."
+      },
+      "catalog": []
+    }
+  }
+}

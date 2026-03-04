@@ -12,10 +12,11 @@ export function createDispatcher(options = {}) {
   const allowedActions = new Set(options.localActionAllowlist ?? []);
   const launchSubagent = options.launchSubagent;
   const runLocalAction = options.runLocalAction;
+  const runHousecallExport = options.runHousecallExport;
 
-  return async function dispatchOrchestratorCommands(text) {
-    const { subagents, localActions } = parseOrchestratorCommands(text);
-    const dispatched = { subagents: [], localActions: [] };
+  return async function dispatchOrchestratorCommands(text, context = {}) {
+    const { subagents, localActions, housecallExports } = parseOrchestratorCommands(text);
+    const dispatched = { subagents: [], localActions: [], housecallExports: [] };
 
     for (const cmd of subagents) {
       const normalized = normalizeRepoUrl(cmd.repo);
@@ -89,6 +90,43 @@ export function createDispatcher(options = {}) {
       }
     }
 
-    return { parsed: { subagents, localActions }, dispatched };
+    for (const payload of housecallExports) {
+      const withUserId = { ...payload };
+      if (!withUserId.user_id) {
+        if (context.telegramChatId != null) {
+          withUserId.user_id = `telegram:${context.telegramChatId}`;
+        } else if (context.userId) {
+          withUserId.user_id = context.userId;
+        }
+      }
+      if (!withUserId.user_id) {
+        dispatched.housecallExports.push({
+          status: 'skipped',
+          error: 'missing user_id and no telegram/user context',
+        });
+        continue;
+      }
+      if (typeof runHousecallExport !== 'function') {
+        dispatched.housecallExports.push({
+          status: 'skipped',
+          error: 'runHousecallExport not configured',
+        });
+        continue;
+      }
+      try {
+        const result = await runHousecallExport(withUserId);
+        dispatched.housecallExports.push({
+          status: result?.dry_run ? 'dry_run' : 'sent',
+          result: result,
+        });
+      } catch (err) {
+        dispatched.housecallExports.push({
+          status: 'error',
+          error: err.message,
+        });
+      }
+    }
+
+    return { parsed: { subagents, localActions, housecallExports }, dispatched };
   };
 }

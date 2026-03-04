@@ -28,3 +28,22 @@ test('parseOrchestratorCommands ignores malformed lines', () => {
   assert.deepEqual(result.subagents, []);
   assert.deepEqual(result.localActions, []);
 });
+
+test('parseOrchestratorCommands extracts HOUSECALL_EXPORT JSON', () => {
+  const text = [
+    'Here is the estimate.',
+    'HOUSECALL_EXPORT: {"customer":{"name":"Jane"},"selections":[{"sku":"HP-3T","quantity":1}],"housecall":{"dry_run":true}}',
+    'Done.',
+  ].join('\n');
+
+  const result = parseOrchestratorCommands(text);
+  assert.equal(result.housecallExports.length, 1);
+  assert.equal(result.housecallExports[0].customer.name, 'Jane');
+  assert.deepEqual(result.housecallExports[0].selections, [{ sku: 'HP-3T', quantity: 1 }]);
+  assert.equal(result.housecallExports[0].housecall.dry_run, true);
+});
+
+test('parseOrchestratorCommands skips invalid HOUSECALL_EXPORT JSON', () => {
+  const result = parseOrchestratorCommands('HOUSECALL_EXPORT: not json {');
+  assert.equal(result.housecallExports.length, 0);
+});

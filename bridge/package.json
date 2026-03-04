@@ -7,13 +7,20 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "mcp:stdio": "node mcp-server/stdio-server.js",
     "test": "node --test",
+    "test:e2e": "node scripts/e2e-estimator-api.js",
     "ingest": "node imports/ingest.js"
   },
   "dependencies": {
+    "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "node-telegram-bot-api": "^0.66.0",
     "redis": "^4.7.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "supertest": "^7.2.2"
   }
 }

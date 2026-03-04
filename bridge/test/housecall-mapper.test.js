@@ -58,6 +58,7 @@ test('buildHousecallEstimatePayload maps estimate to Housecall payload shape', (
   assert.equal(payload.options[0].line_items.length, 1);
   assert.equal(payload.options[0].line_items[0].unit_price, 6400);
   assert.ok(payload.options[0].line_items[0].description.includes('Code: HP-3T-16'));
+  assert.ok(payload.options[0].line_items[0].description.includes('Cost: $3200.00'));
 });
 
 test('buildHousecallEstimatePayload falls back to nested customer object', () => {
