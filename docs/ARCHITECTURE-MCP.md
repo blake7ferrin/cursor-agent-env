@@ -29,7 +29,8 @@ The bridge is the **single gateway** for remote channels:
 The bridge runs an **MCP adapter layer** under `bridge/mcp/` and, when **USE_MCP_TOOLS=true**, exposes:
 
 1. **HTTP tool routes** — `GET /mcp/tools` (list) and `POST /mcp/call` (invoke). Same auth and rate limits as other sensitive routes.
-2. **Stdio MCP server** — `bridge/mcp-server/stdio-server.js` (run with `npm run mcp:stdio`). Serves the same tools over newline-delimited JSON-RPC on stdin/stdout for clients (e.g. Cursor) that spawn the process.
+2. **HTTP JSON-RPC MCP route** — `POST /mcp` for remote MCP clients/registries using `initialize`, `tools/list`, and `tools/call` over JSON-RPC.
+3. **Stdio MCP server** — `bridge/mcp-server/stdio-server.js` (run with `npm run mcp:stdio`). Serves the same tools over newline-delimited JSON-RPC on stdin/stdout for clients (e.g. Cursor) that spawn the process.
 
 The adapters:
 

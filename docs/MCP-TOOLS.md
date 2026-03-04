@@ -4,6 +4,7 @@ The bridge exposes these tools via:
 
 1. **Stdio MCP server** — run `npm run mcp:stdio` from `bridge/`; a client (e.g. Cursor) spawns it and talks JSON-RPC over stdin/stdout.
 2. **HTTP** — when `USE_MCP_TOOLS=true`, `GET /mcp/tools` lists tools and `POST /mcp/call` invokes one (requires bridge auth).
+3. **HTTP JSON-RPC** — when `USE_MCP_TOOLS=true`, `POST /mcp` accepts MCP JSON-RPC requests (`initialize`, `tools/list`, `tools/call`) for remote MCP registry clients.
 
 All tools use **Zod** for input validation. Errors are returned in a consistent envelope: `{ ok: false, error: string, code: string, details?: array }`. Codes: `UNKNOWN_TOOL`, `VALIDATION_ERROR`, `TOOL_DISABLED`, `TOOL_ERROR`.
 
@@ -196,3 +197,4 @@ Resolve appointment to job/estimate context. Currently delegates to Housecall; s
 
 - **GET /mcp/tools** — List tools (auth required). Response: `{ tools: [ { name, description, inputSchema }, ... ] }`.
 - **POST /mcp/call** — Call a tool (auth required). Body: `{ tool: "<name>", arguments: { ... } }` or `{ name, args }`. Response: `{ ok: true, result }` or `{ ok: false, error, code, details? }`.
+- **POST /mcp** — JSON-RPC endpoint (auth required). Body: `{ "jsonrpc":"2.0", "id":1, "method":"tools/list", "params":{} }`.

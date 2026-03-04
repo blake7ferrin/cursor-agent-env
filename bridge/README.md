@@ -178,6 +178,7 @@ Supported JSON-RPC methods:
 
 - **GET /mcp/tools** — List tools (auth required). Response: `{ tools: [ { name, description, inputSchema }, ... ] }`.
 - **POST /mcp/call** — Call a tool (auth required). Body: `{ "tool": "housecall.get_config", "arguments": {} }`. Response: `{ ok: true, result }` or `{ ok: false, error, code, details? }`.
+- **POST /mcp** — MCP JSON-RPC endpoint (auth required) for remote MCP clients/registries. Supports `initialize`, `tools/list`, and `tools/call`.
 
 Example:
 
@@ -191,6 +192,15 @@ curl -s -X POST http://localhost:3000/mcp/call \
 ```
 
 Tool reference (names, arguments, return shapes): **docs/MCP-TOOLS.md**.
+
+Registry smoke test:
+
+```bash
+cd bridge
+BASE_URL=https://your-bridge.example.com BRIDGE_AUTH_TOKEN=your-token npm run test:mcp-registry
+```
+
+Hybrid cloud+local setup guide: **docs/CLOUD-MCP-HYBRID-SETUP.md**.
 
 ### Security
 
