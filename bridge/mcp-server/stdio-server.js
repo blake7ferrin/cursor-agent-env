@@ -93,8 +93,15 @@ function handleNotification(msg) {
 
 async function main() {
   const buf = [];
+  let pendingRequests = 0;
+  let stdinClosed = false;
+  const maybeExit = () => {
+    if (stdinClosed && pendingRequests === 0) {
+      process.exit(0);
+    }
+  };
   process.stdin.setEncoding('utf8');
-  process.stdin.on('data', (chunk) => {
+  process.stdin.on('data', async (chunk) => {
     const lines = (buf.push(chunk) && buf.join('').split(/\n/)) || [];
     buf.length = 0;
     const last = lines.pop();
@@ -106,7 +113,13 @@ async function main() {
         if (msg.method !== undefined && msg.id === undefined) {
           handleNotification(msg);
         } else {
-          await handleRequest(msg);
+          pendingRequests += 1;
+          try {
+            await handleRequest(msg);
+          } finally {
+            pendingRequests -= 1;
+            maybeExit();
+          }
         }
       } catch (err) {
         log('Parse/handle error:', err);
@@ -115,7 +128,8 @@ async function main() {
     }
   });
   process.stdin.on('end', () => {
-    process.exit(0);
+    stdinClosed = true;
+    maybeExit();
   });
   log('MCP server listening on stdio');
 }

@@ -292,6 +292,85 @@ const dispatchOrchestratorCommands = createDispatcher({
   },
 });
 
+function toMcpToolsList() {
+  return listTools().map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
+  }));
+}
+
+async function handleMcpJsonRpcMessage(message, options = {}) {
+  const hasId = message && typeof message === 'object' && Object.prototype.hasOwnProperty.call(message, 'id');
+  const id = hasId ? message.id : null;
+  const invalidRequest = () => ({ jsonrpc: '2.0', id, error: { code: -32600, message: 'Invalid Request' } });
+
+  if (!message || typeof message !== 'object' || message.jsonrpc !== '2.0' || typeof message.method !== 'string') {
+    return invalidRequest();
+  }
+
+  if (!hasId) return null; // JSON-RPC notification
+
+  const method = message.method;
+  if (method === 'initialize') {
+    return {
+      jsonrpc: '2.0',
+      id,
+      result: {
+        protocolVersion: '2024-11-05',
+        capabilities: { tools: {} },
+        serverInfo: { name: 'cursor-bridge-mcp', version: '1.0.0' },
+      },
+    };
+  }
+
+  if (method === 'tools/list') {
+    return {
+      jsonrpc: '2.0',
+      id,
+      result: {
+        tools: toMcpToolsList(),
+      },
+    };
+  }
+
+  if (method === 'tools/call') {
+    const name = message.params?.name;
+    const args = message.params?.arguments ?? {};
+    if (!name || typeof name !== 'string') {
+      return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: missing tool name' } };
+    }
+    const out = await runTool(name.trim(), args, { allowDebugRequest: options.allowDebugRequest === true });
+    if (out.ok) {
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: {
+          content: [{ type: 'text', text: JSON.stringify(out.result, null, 2) }],
+          isError: false,
+        },
+      };
+    }
+    return {
+      jsonrpc: '2.0',
+      id,
+      result: {
+        content: [{ type: 'text', text: JSON.stringify({ error: out.error, code: out.code, details: out.details }) }],
+        isError: true,
+      },
+    };
+  }
+
+  return {
+    jsonrpc: '2.0',
+    id,
+    error: {
+      code: -32601,
+      message: `Method not found: ${method}`,
+    },
+  };
+}
+
 /** Build Telegram-friendly lines from Housecall export result: customer resolution, estimate summary, notifications. */
 function formatHousecallExportBlockForTelegram(exports) {
   const lines = [];
@@ -335,8 +414,30 @@ app.get('/health', (req, res) => {
 });
 
 if (useMcpTools) {
+  app.post('/mcp', requireBridgeAuth, applyRateLimit, async (req, res) => {
+    const allowDebugRequest = enableHousecallDebugRequest;
+    if (Array.isArray(req.body)) {
+      if (req.body.length === 0) {
+        return res.status(400).json({
+          jsonrpc: '2.0',
+          id: null,
+          error: { code: -32600, message: 'Invalid Request' },
+        });
+      }
+      const responses = (
+        await Promise.all(req.body.map((entry) => handleMcpJsonRpcMessage(entry, { allowDebugRequest })))
+      ).filter(Boolean);
+      if (responses.length === 0) return res.status(204).send();
+      return res.json(responses);
+    }
+
+    const responsePayload = await handleMcpJsonRpcMessage(req.body, { allowDebugRequest });
+    if (!responsePayload) return res.status(204).send();
+    return res.json(responsePayload);
+  });
+
   app.get('/mcp/tools', requireBridgeAuth, (req, res) => {
-    const tools = listTools();
+    const tools = toMcpToolsList();
     return res.json({ tools });
   });
   app.post('/mcp/call', requireBridgeAuth, applyRateLimit, async (req, res) => {

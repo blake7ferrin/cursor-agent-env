@@ -11,6 +11,7 @@ A GitHub repository that acts as the **persistent environment** (memory, skills,
 - **memory/YYYY-MM-DD.md** — Daily logs (append-only).
 - **tasks/schedule.md** — What to do when the scheduler runs (cron / time-context prompts).
 - **docs/orchestrator-protocol.md** — Format for SUBAGENT and LOCAL_ACTION so the bridge can parse and execute.
+- **docs/CLOUD-MCP-HYBRID-SETUP.md** — Production runbook for cloud bridge + MCP registry + optional local relay.
 - **bridge/** — Optional bridge service (Node.js) for Telegram and PWA; run with Doppler for secrets. Use it when you want Telegram or the PWA chat, or when you need the orchestrator protocol parsed by your own backend; Cursor’s native Slack + agent environment can cover many “control agents from elsewhere” needs without the bridge.
 
 ## Quick start (Cursor only)
