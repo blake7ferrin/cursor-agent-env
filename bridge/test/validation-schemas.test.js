@@ -72,8 +72,8 @@ test('housecallRequestBodySchema accepts valid path', () => {
   assert.equal(result.success, true);
 });
 
-test('housecallRequestBodySchema rejects path not starting with /v or http', () => {
-  const result = housecallRequestBodySchema.safeParse({ path: '/other' });
+test('housecallRequestBodySchema rejects path not starting with / or http', () => {
+  const result = housecallRequestBodySchema.safeParse({ path: 'other' });
   assert.equal(result.success, false);
 });
 

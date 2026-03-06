@@ -71,8 +71,8 @@ export const housecallRequestBodySchema = z.object({
   headers: z.record(z.string(), z.unknown()).optional(),
 }).refine((data) => {
   const path = data.path || '';
-  return /^\/v\d+\//.test(path) || path.startsWith('https://') || path.startsWith('http://');
-}, { message: 'path must start with /v<version>/ or be an absolute URL', path: ['path'] });
+  return path.startsWith('/') || path.startsWith('https://') || path.startsWith('http://');
+}, { message: 'path must start with / or be an absolute URL', path: ['path'] });
 
 /**
  * Format Zod errors into 400 response shape with field-level details.

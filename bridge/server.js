@@ -444,8 +444,8 @@ app.post('/integrations/housecall/request', requireBridgeAuth, applyRateLimit, (
   if (!path || typeof path !== 'string') {
     return res.status(400).json({ error: 'Missing path' });
   }
-  if (!/^\/v\d+\//.test(path) && !path.startsWith('https://') && !path.startsWith('http://')) {
-    return res.status(400).json({ error: 'path must start with /v<version>/ or be an absolute URL' });
+  if (!path.startsWith('/') && !path.startsWith('https://') && !path.startsWith('http://')) {
+    return res.status(400).json({ error: 'path must start with / or be an absolute URL' });
   }
   try {
     const result = await mcpHousecallRequest({
