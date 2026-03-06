@@ -129,10 +129,10 @@ test('buildHousecallExportRequest creates option-note payload when mode is add_o
 test('buildHousecallAppointmentLookupRequest resolves appointment template', () => {
   const lookup = buildHousecallAppointmentLookupRequest({
     appointment_id: 'apt_111',
-    appointment_lookup_path: '/v1/schedule/{appointment_id}',
+    appointment_lookup_path: '/schedule/{appointment_id}',
   });
   assert.equal(lookup.method, 'GET');
-  assert.equal(lookup.path, '/v1/schedule/apt_111');
+  assert.equal(lookup.path, '/schedule/apt_111');
 });
 
 test('buildHousecallUpsertPlan auto strategy orders update then add_to_job then create', () => {

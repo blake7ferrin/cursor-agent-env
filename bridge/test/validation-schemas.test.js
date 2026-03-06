@@ -68,7 +68,7 @@ test('housecallRequestBodySchema requires path', () => {
 });
 
 test('housecallRequestBodySchema accepts valid path', () => {
-  const result = housecallRequestBodySchema.safeParse({ path: '/v1/customers' });
+  const result = housecallRequestBodySchema.safeParse({ path: '/customers' });
   assert.equal(result.success, true);
 });
 

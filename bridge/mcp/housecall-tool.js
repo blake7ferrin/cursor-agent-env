@@ -28,7 +28,7 @@ export async function housecallRequest(opts) {
 }
 
 /**
- * Lightweight auth test (e.g. GET /v1/customers?page_size=1).
+ * Lightweight auth test (e.g. GET /customers?page_size=1).
  * @param {string} [path]
  */
 export async function testConnection(path) {

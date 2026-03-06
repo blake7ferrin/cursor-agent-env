@@ -43,7 +43,7 @@ Lightweight Housecall API connectivity check (e.g. GET with small page_size).
 **Example:**
 ```json
 { "tool": "housecall.test_connection", "arguments": {} }
-{ "tool": "housecall.test_connection", "arguments": { "path": "/v1/customers" } }
+{ "tool": "housecall.test_connection", "arguments": { "path": "/customers" } }
 ```
 
 ---
@@ -56,7 +56,7 @@ Raw Housecall API request (debug). **Disabled** unless `ENABLE_HOUSECALL_DEBUG_R
 
 | Name   | Type   | Required | Description |
 |--------|--------|----------|-------------|
-| path   | string | yes      | Path (e.g. `/v1/customers`) or absolute URL |
+| path   | string | yes      | Path (e.g. `/customers`) or absolute URL |
 | method | string | no       | HTTP method (default GET) |
 | query  | object | no       | Query params |
 | body   | any    | no       | Request body |
@@ -66,7 +66,7 @@ Raw Housecall API request (debug). **Disabled** unless `ENABLE_HOUSECALL_DEBUG_R
 
 **Example:**
 ```json
-{ "tool": "housecall.request", "arguments": { "path": "/v1/customers", "method": "GET" } }
+{ "tool": "housecall.request", "arguments": { "path": "/customers", "method": "GET" } }
 ```
 
 ---

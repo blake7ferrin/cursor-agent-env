@@ -37,7 +37,7 @@ test('runTool housecall.get_config returns ok and result', async () => {
 });
 
 test('runTool housecall.request without allowDebugRequest returns TOOL_DISABLED', async () => {
-  const out = await runTool('housecall.request', { path: '/v1/customers' }, { allowDebugRequest: false });
+  const out = await runTool('housecall.request', { path: '/customers' }, { allowDebugRequest: false });
   assert.equal(out.ok, false);
   assert.equal(out.code, 'TOOL_DISABLED');
   assert.ok(out.error.includes('disabled'));
