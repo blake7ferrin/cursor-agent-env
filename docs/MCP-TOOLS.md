@@ -4,6 +4,7 @@ The bridge exposes these tools via:
 
 1. **Stdio MCP server** — run `npm run mcp:stdio` from `bridge/`; a client (e.g. Cursor) spawns it and talks JSON-RPC over stdin/stdout.
 2. **HTTP** — when `USE_MCP_TOOLS=true`, `GET /mcp/tools` lists tools and `POST /mcp/call` invokes one (requires bridge auth).
+3. **Remote JSON-RPC** — when `USE_MCP_TOOLS=true`, `POST /mcp` supports MCP-style JSON-RPC methods (`initialize`, `tools/list`, `tools/call`) for MCP Registry remote server setups (requires bridge auth).
 
 All tools use **Zod** for input validation. Errors are returned in a consistent envelope: `{ ok: false, error: string, code: string, details?: array }`. Codes: `UNKNOWN_TOOL`, `VALIDATION_ERROR`, `TOOL_DISABLED`, `TOOL_ERROR`.
 

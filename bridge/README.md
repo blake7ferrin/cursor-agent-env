@@ -24,7 +24,7 @@ Secrets are not always available from the environment (e.g. in CI or when the br
    - `TELEGRAM_BOT_TOKEN` — optional; from [@BotFather](https://t.me/BotFather) if you want Telegram.
    - `DISABLE_HOUSECALL_REQUEST` — set to `true` or `1` to disable `POST /integrations/housecall/request` (e.g. in production).
    - `ENABLE_HOUSECALL_DEBUG_REQUEST` — set to `true` or `1` to **allow** the debug proxy `POST /integrations/housecall/request`. When unset (or `false`), the endpoint returns 403. Use with `DISABLE_HOUSECALL_REQUEST` unset.
-   - `USE_MCP_TOOLS` — set to `true` or `1` to enable **GET /mcp/tools** and **POST /mcp/call** for MCP-style tool discovery and invocation. When unset, these routes are not registered.
+   - `USE_MCP_TOOLS` — set to `true` or `1` to enable **GET /mcp/tools**, **POST /mcp/call**, and **POST /mcp** (JSON-RPC) for MCP-style tool discovery and invocation. When unset, these routes are not registered.
    - Housecall/estimator vars as needed — see [docs/DOPPLER.md](../docs/DOPPLER.md).
 4. Run the bridge with Doppler injecting env vars:
    ```bash
@@ -178,6 +178,7 @@ Supported JSON-RPC methods:
 
 - **GET /mcp/tools** — List tools (auth required). Response: `{ tools: [ { name, description, inputSchema }, ... ] }`.
 - **POST /mcp/call** — Call a tool (auth required). Body: `{ "tool": "housecall.get_config", "arguments": {} }`. Response: `{ ok: true, result }` or `{ ok: false, error, code, details? }`.
+- **POST /mcp** — MCP Registry-friendly JSON-RPC endpoint (auth + rate limit). Supports `initialize`, `tools/list`, and `tools/call`.
 
 Example:
 
@@ -188,9 +189,14 @@ curl -s -X POST http://localhost:3000/mcp/call \
   -H "Authorization: Bearer $BRIDGE_AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"tool":"catalog.get_report","arguments":{}}'
+curl -s -X POST http://localhost:3000/mcp \
+  -H "Authorization: Bearer $BRIDGE_AUTH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
 
 Tool reference (names, arguments, return shapes): **docs/MCP-TOOLS.md**.
+Cloud deployment/runbook for MCP registry + optional local relay: **docs/CLOUD-MCP-HYBRID-SETUP.md**.
 
 ### Security
 
@@ -199,7 +205,7 @@ Tool reference (names, arguments, return shapes): **docs/MCP-TOOLS.md**.
 
 ### Feature flag
 
-- **USE_MCP_TOOLS** — Set to `true` or `1` to register **GET /mcp/tools** and **POST /mcp/call**. When unset, these routes are not registered (404). Existing `/chat`, Telegram, estimator, and Housecall export flows are unchanged.
+- **USE_MCP_TOOLS** — Set to `true` or `1` to register **GET /mcp/tools**, **POST /mcp/call**, and **POST /mcp**. When unset, these routes are not registered (404). Existing `/chat`, Telegram, estimator, and Housecall export flows are unchanged.
 
 ## HVAC estimator MVP
 

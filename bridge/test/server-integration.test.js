@@ -176,3 +176,48 @@ test('POST /mcp/call validation error returns ok: false with code VALIDATION_ERR
   assert.equal(res.body?.code, 'VALIDATION_ERROR');
   assert.ok(Array.isArray(res.body?.details));
 });
+
+test('POST /mcp initialize returns JSON-RPC capabilities', async () => {
+  const res = await request(app)
+    .post('/mcp')
+    .set(auth)
+    .set('Content-Type', 'application/json')
+    .send({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} });
+  assert.equal(res.status, 200);
+  assert.equal(res.body?.jsonrpc, '2.0');
+  assert.equal(res.body?.id, 1);
+  assert.equal(res.body?.result?.protocolVersion, '2024-11-05');
+  assert.ok(typeof res.body?.result?.serverInfo?.name === 'string');
+});
+
+test('POST /mcp tools/list returns tool registry', async () => {
+  const res = await request(app)
+    .post('/mcp')
+    .set(auth)
+    .set('Content-Type', 'application/json')
+    .send({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
+  assert.equal(res.status, 200);
+  assert.equal(res.body?.jsonrpc, '2.0');
+  assert.equal(res.body?.id, 2);
+  assert.ok(Array.isArray(res.body?.result?.tools));
+  assert.ok(res.body.result.tools.some((t) => t.name === 'housecall.get_config'));
+});
+
+test('POST /mcp tools/call returns MCP content payload', async () => {
+  const res = await request(app)
+    .post('/mcp')
+    .set(auth)
+    .set('Content-Type', 'application/json')
+    .send({
+      jsonrpc: '2.0',
+      id: 3,
+      method: 'tools/call',
+      params: { name: 'housecall.get_config', arguments: {} },
+    });
+  assert.equal(res.status, 200);
+  assert.equal(res.body?.jsonrpc, '2.0');
+  assert.equal(res.body?.id, 3);
+  assert.equal(res.body?.result?.isError, false);
+  assert.ok(Array.isArray(res.body?.result?.content));
+  assert.equal(res.body.result.content[0]?.type, 'text');
+});

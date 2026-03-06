@@ -45,6 +45,8 @@ Durable facts, preferences, and decisions. The agent updates this file when the 
 - Run `npm run ingest` in `bridge/` (or `POST /ingest` with bridge auth) to validate and build catalog output.
 - Canonical run uses `--only CLEAN,ChangeOut_Pricebook` for the cleaned equipment sheet plus changeout pricebook.
 - Preferred source profile is now `--profile preferred`: Day & Night Google Sheet XLSX + AC Pro clean/changeout CSVs, while Arizona/A2L/installer-pricing PDFs are tracked as manual reference-only files.
+- Preferred Day & Night/AC Pro XLSX source was updated on 2026-03-05 to `bridge/imports/incoming/DayNight_ACPro_AI_Catalog.xlsx` (replacing the old Google Sheet export filename in profile include list).
+- XLSX ingestion parser now supports camel-case AI catalog columns (`SystemPrice`, `ModelNumber`, `SystemType`, component price columns) and ingests only `Catalog_All_AI` by default via profile `ignore_sheets` to reduce duplicate rows.
 - Output files: `bridge/imports/catalog/equipment-and-adders.json` and `bridge/imports/validation-report.json`.
 - Changeout planner runtime (2026-02-25): `POST /estimator/changeout-plan` now auto-loads the ingested `preferred` profile catalog by default, refreshes ingest when report/profile is stale, and can merge imported catalog with user-saved catalog (`include_user_catalog`).
 - Estimate runtime (2026-02-25): `POST /estimator/estimate` and estimate-building inside `POST /estimator/export/housecall` now use the same imported-catalog runtime options by default (`catalog_profile=preferred`, `use_imported_catalog=true`, merge + optional refresh), so live estimate/export no longer depends on manual catalog upload.

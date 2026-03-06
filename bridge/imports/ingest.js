@@ -290,6 +290,12 @@ function inferSystemTypeFromSheet(sheetName) {
   return '';
 }
 
+function buildSubcategoryFromParts(prefix, parts) {
+  const cleaned = parts.map((part) => normalizeText(part)).filter(Boolean);
+  const joined = cleaned.join(' - ');
+  return joined || prefix;
+}
+
 function parseRowsFromXlsxSheet(matrix, sheetName, options = {}) {
   const rows = matrix.map((r) => (Array.isArray(r) ? r.map((v) => normalizeText(v)) : []));
   const normalizedSheetName = normalizeText(sheetName);
@@ -311,12 +317,20 @@ function parseRowsFromXlsxSheet(matrix, sheetName, options = {}) {
   if (headerRowIndex === -1) return [];
 
   const header = rows[headerRowIndex].map((v) => normalizeHeader(v));
+  const supplierIdx = pickColumnIndex(header, ['supplier', 'brand']);
+  const categoryLabelIdx = pickColumnIndex(header, ['category']);
+  const tierIdx = pickColumnIndex(header, ['tier']);
+  const systemTypeIdx = pickColumnIndex(header, ['system type', 'systemtype']);
   const tonnageIdx = pickColumnIndex(header, ['tonnage', 'size']);
-  const modelIdx = pickColumnIndex(header, ['model number', 'model', 'condenser']);
+  const modelIdx = pickColumnIndex(header, ['model number', 'modelnumber', 'model', 'condenser']);
   const ahriIdx = pickColumnIndex(header, ['ahri']);
   const notesIdx = pickColumnIndex(header, ['notes']);
+  const pricingStatusIdx = pickColumnIndex(header, ['pricing status', 'pricingstatus']);
   const coolingIdx = pickColumnIndex(header, ['clg btus', 'cooling capacity', 'btuh']);
-  const systemPriceIdx = pickColumnIndex(header, ['system price']);
+  const systemPriceIdx = pickColumnIndex(header, ['system price', 'systemprice']);
+  const condenserPriceIdx = pickColumnIndex(header, ['condenser price', 'condenserprice']);
+  const indoorPriceIdx = pickColumnIndex(header, ['indoor or coil price', 'indoororcoilprice']);
+  const furnacePriceIdx = pickColumnIndex(header, ['furnace price', 'furnaceprice']);
   const priceIndices = header
     .map((h, idx) => (h === 'price' || h.endsWith(' price') ? idx : -1))
     .filter((idx) => idx !== -1);
@@ -340,16 +354,30 @@ function parseRowsFromXlsxSheet(matrix, sheetName, options = {}) {
     }
     blankRows = 0;
 
+    const supplier = supplierIdx >= 0 ? normalizeText(row[supplierIdx]) : '';
+    const categoryLabel = categoryLabelIdx >= 0 ? normalizeText(row[categoryLabelIdx]) : '';
+    const tier = tierIdx >= 0 ? normalizeText(row[tierIdx]) : '';
+    const rowSystemType = systemTypeIdx >= 0 ? normalizeText(row[systemTypeIdx]) : '';
     let tonnage = tonnageIdx >= 0 ? normalizeText(row[tonnageIdx]) : '';
     const model = modelIdx >= 0 ? normalizeText(row[modelIdx]) : '';
     const notes = notesIdx >= 0 ? normalizeText(row[notesIdx]) : '';
     const ahri = ahriIdx >= 0 ? normalizeText(row[ahriIdx]) : '';
+    const pricingStatus = pricingStatusIdx >= 0 ? normalizeText(row[pricingStatusIdx]) : '';
     const coolingBtus = coolingIdx >= 0 ? parseNumber(row[coolingIdx]) : NaN;
     if (!tonnage && Number.isFinite(coolingBtus) && coolingBtus > 0) {
       tonnage = `${Math.round((coolingBtus / 12000) * 10) / 10}`;
     }
 
     let baseValue = systemPriceIdx >= 0 ? parseNumber(row[systemPriceIdx]) : NaN;
+    if (Number.isNaN(baseValue)) {
+      const componentPrices = [condenserPriceIdx, indoorPriceIdx, furnacePriceIdx]
+        .filter((idx) => idx >= 0)
+        .map((idx) => parseNumber(row[idx]))
+        .filter((n) => Number.isFinite(n));
+      if (componentPrices.length) {
+        baseValue = componentPrices.reduce((sum, value) => sum + value, 0);
+      }
+    }
     if (Number.isNaN(baseValue) && priceIndices.length) {
       const prices = priceIndices.map((idx) => parseNumber(row[idx])).filter((n) => Number.isFinite(n));
       if (prices.length) {
@@ -368,8 +396,9 @@ function parseRowsFromXlsxSheet(matrix, sheetName, options = {}) {
       cost = roundMoney(baseValue * (1 - targetMargin));
     }
 
-    const systemType = inferSystemTypeFromSheet(normalizedSheetName);
+    const systemType = rowSystemType || inferSystemTypeFromSheet(normalizedSheetName);
     const nameParts = [];
+    if (supplier) nameParts.push(supplier);
     if (tonnage) nameParts.push(`${tonnage} Ton`);
     if (systemType) nameParts.push(systemType);
     if (model) nameParts.push(model);
@@ -379,9 +408,14 @@ function parseRowsFromXlsxSheet(matrix, sheetName, options = {}) {
     parsed.push({
       industry: 'Heating and Air Conditioning',
       category,
-      subcategory_1: `${subcategoryPrefix} - ${normalizedSheetName}`,
+      subcategory_1: buildSubcategoryFromParts(subcategoryPrefix, [supplier, categoryLabel || normalizedSheetName, tier]),
       name: generatedName,
-      description: [model ? `Model: ${model}` : '', ahri ? `AHRI: ${ahri}` : '', notes].filter(Boolean).join(' | '),
+      description: [
+        model ? `Model: ${model}` : '',
+        ahri ? `AHRI: ${ahri}` : '',
+        pricingStatus ? `PricingStatus: ${pricingStatus}` : '',
+        notes,
+      ].filter(Boolean).join(' | '),
       price: `${price}`,
       cost: `${cost}`,
       taxable: 'true',

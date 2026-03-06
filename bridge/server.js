@@ -335,6 +335,60 @@ app.get('/health', (req, res) => {
 });
 
 if (useMcpTools) {
+  app.post('/mcp', requireBridgeAuth, applyRateLimit, async (req, res) => {
+    const payload = req.body ?? {};
+    const id = Object.prototype.hasOwnProperty.call(payload, 'id') ? payload.id : null;
+    const method = typeof payload.method === 'string' ? payload.method.trim() : '';
+    const params = payload.params ?? {};
+
+    const sendResult = (result) => res.json({ jsonrpc: '2.0', id, result });
+    const sendError = (code, message) =>
+      res.json({
+        jsonrpc: '2.0',
+        id,
+        error: { code, message },
+      });
+
+    if (payload.jsonrpc !== '2.0' || !method) {
+      return sendError(-32600, 'Invalid Request');
+    }
+
+    if (method === 'initialize') {
+      return sendResult({
+        protocolVersion: '2024-11-05',
+        capabilities: { tools: {} },
+        serverInfo: { name: 'cursor-bridge-mcp-http', version: '1.0.0' },
+      });
+    }
+
+    if (method === 'tools/list') {
+      const tools = listTools().map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+      }));
+      return sendResult({ tools });
+    }
+
+    if (method === 'tools/call') {
+      const name = typeof params?.name === 'string' ? params.name.trim() : '';
+      const args = params?.arguments ?? {};
+      const out = await runTool(name, args, { allowDebugRequest: enableHousecallDebugRequest });
+      if (out.ok) {
+        return sendResult({
+          content: [{ type: 'text', text: JSON.stringify(out.result, null, 2) }],
+          isError: false,
+        });
+      }
+      return sendResult({
+        content: [{ type: 'text', text: JSON.stringify({ error: out.error, code: out.code, details: out.details }) }],
+        isError: true,
+      });
+    }
+
+    return sendError(-32601, `Method not found: ${method}`);
+  });
+
   app.get('/mcp/tools', requireBridgeAuth, (req, res) => {
     const tools = listTools();
     return res.json({ tools });

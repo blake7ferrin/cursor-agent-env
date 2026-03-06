@@ -9,6 +9,7 @@
     "dev": "node --watch server.js",
     "mcp:stdio": "node mcp-server/stdio-server.js",
     "test": "node --test",
+    "test:mcp-registry": "node scripts/smoke-mcp-registry.js",
     "test:e2e": "node scripts/e2e-estimator-api.js",
     "ingest": "node imports/ingest.js"
   },
