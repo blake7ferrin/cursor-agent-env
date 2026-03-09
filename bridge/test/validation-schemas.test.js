@@ -44,6 +44,15 @@ test('estimateBodySchema accepts minimal body', () => {
   assert.equal(result.success, true);
 });
 
+test('estimateBodySchema accepts labor_context object', () => {
+  const result = estimateBodySchema.safeParse({
+    user_id: 'u1',
+    selections: [],
+    labor_context: { weekend_day: 'sat' },
+  });
+  assert.equal(result.success, true);
+});
+
 test('exportHousecallBodySchema accepts body with user_id and customer', () => {
   const result = exportHousecallBodySchema.safeParse({
     user_id: 'u1',

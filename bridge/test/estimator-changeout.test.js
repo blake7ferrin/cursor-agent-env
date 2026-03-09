@@ -78,6 +78,10 @@ test('changeout plan returns auto_ready with selected matching option', () => {
   assert.ok(plan.draft_estimate_request);
   assert.ok(plan.estimate_preview);
   assert.equal(plan.recommended_options.length >= 1, true);
+  assert.equal(
+    plan.draft_estimate_request.manual_items.some((item) => item.code === 'LABOR-BASIC-SPLIT-CHANGEOUT'),
+    true,
+  );
 });
 
 test('changeout plan returns needs_selection when options exist but no selection', () => {
