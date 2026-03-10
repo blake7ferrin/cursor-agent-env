@@ -15,6 +15,12 @@ const catalog = [
     itemType: 'equipment',
     attributes: { systemType: 'package_unit' },
   },
+  {
+    sku: 'MS-1T',
+    name: '1 Ton Ductless Mini Split',
+    itemType: 'equipment',
+    attributes: { systemType: 'mini_split' },
+  },
 ];
 
 test('applyInstallerPieceRatePricing adds split base labor by default', () => {
@@ -41,6 +47,17 @@ test('applyInstallerPieceRatePricing adds package base labor for package systems
   assert.equal(out.appliedItems.some((item) => item.code === 'LABOR-BASIC-PACKAGE-CHANGEOUT'), true);
 });
 
+test('applyInstallerPieceRatePricing adds mini-split base labor for mini-split systems', () => {
+  const out = applyInstallerPieceRatePricing({
+    selections: [{ sku: 'MS-1T', quantity: 1 }],
+    manualItems: [],
+    catalog,
+  });
+
+  assert.equal(out.systemType, 'mini_split');
+  assert.equal(out.appliedItems.some((item) => item.code === 'LABOR-BASIC-MINI-SPLIT-CHANGEOUT'), true);
+});
+
 test('applyInstallerPieceRatePricing respects context adders and de-dupes by code', () => {
   const out = applyInstallerPieceRatePricing({
     selections: [{ sku: 'HP-SPLIT-2T', quantity: 1 }],
@@ -64,6 +81,23 @@ test('applyInstallerPieceRatePricing respects context adders and de-dupes by cod
   const plenum = out.manualItems.find((item) => item.code === 'ADDER-PLENUM-WITH-INSTALL');
   assert.equal(Boolean(plenum), true);
   assert.equal(plenum.quantity, 2);
+});
+
+test('applyInstallerPieceRatePricing avoids semantic overlap with existing complexity adders', () => {
+  const out = applyInstallerPieceRatePricing({
+    selections: [{ sku: 'HP-SPLIT-2T', quantity: 1 }],
+    manualItems: [{ code: 'ADDER-LINESET', name: 'Line-set replacement labor adder', quantity: 1, unitCost: 0 }],
+    catalog,
+    laborContext: {
+      line_set_replacement: true,
+      high_voltage_run: 'under_50',
+    },
+  });
+
+  const codes = new Set(out.manualItems.map((item) => item.code));
+  assert.equal(codes.has('ADDER-LINESET'), true);
+  assert.equal(codes.has('ADDER-LINESET-RESIDENTIAL'), false);
+  assert.equal(codes.has('ADDER-HIGH-VOLTAGE-UNDER-50'), true);
 });
 
 test('applyInstallerPieceRatePricing adds taxable material allowances when provided', () => {

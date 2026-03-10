@@ -100,6 +100,24 @@ function dedupeByCode(items = []) {
   return { existingCodes, output };
 }
 
+function itemContainsAnyToken(item, tokens = []) {
+  if (!item || typeof item !== 'object') return false;
+  const blob = `${normalizeLower(item.code)} ${normalizeLower(item.name)}`;
+  return tokens.some((token) => blob.includes(token));
+}
+
+function hasSemanticOverlap(existingItems = [], source = '') {
+  const semanticRules = {
+    tight_attic: ['adder-tight-attic', 'tight attic', 'attic access', 'restricted attic', 'crawl access'],
+    line_set_residential: ['adder-lineset', 'lineset', 'line set', 'line-set'],
+    high_voltage_under_50: ['adder-electrical', 'high voltage', 'electrical', 'breaker', 'disconnect', 'wire', 'conductor'],
+    high_voltage_over_50: ['adder-electrical', 'high voltage', 'electrical', 'breaker', 'disconnect', 'wire', 'conductor'],
+  };
+  const tokens = semanticRules[source] || [];
+  if (!tokens.length) return false;
+  return (Array.isArray(existingItems) ? existingItems : []).some((item) => itemContainsAnyToken(item, tokens));
+}
+
 function resolveBaseLaborDefinition(systemTypeCanonical) {
   if (systemTypeCanonical === 'package_unit') {
     return {
@@ -117,6 +135,15 @@ function resolveBaseLaborDefinition(systemTypeCanonical) {
       unitCost: 1400,
       itemType: 'labor',
       source: 'base_split_changeout',
+    };
+  }
+  if (systemTypeCanonical === 'mini_split') {
+    return {
+      code: 'LABOR-BASIC-MINI-SPLIT-CHANGEOUT',
+      name: 'Installer labor - basic mini-split install',
+      unitCost: 1200,
+      itemType: 'labor',
+      source: 'base_mini_split_changeout',
     };
   }
   return null;
@@ -414,6 +441,7 @@ export function applyInstallerPieceRatePricing({
   const adders = resolveAdderDefinitions(context);
   for (const adder of adders) {
     if (dedupe.existingCodes.has(adder.code)) continue;
+    if (hasSemanticOverlap(outputItems, adder.source)) continue;
     const next = createLaborItem(adder);
     outputItems.push(next);
     dedupe.existingCodes.add(adder.code);
