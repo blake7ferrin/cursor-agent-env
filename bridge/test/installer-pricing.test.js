@@ -66,6 +66,30 @@ test('applyInstallerPieceRatePricing respects context adders and de-dupes by cod
   assert.equal(plenum.quantity, 2);
 });
 
+test('applyInstallerPieceRatePricing adds taxable material allowances when provided', () => {
+  const out = applyInstallerPieceRatePricing({
+    selections: [{ sku: 'HP-SPLIT-2T', quantity: 1 }],
+    manualItems: [],
+    catalog,
+    laborContext: {
+      line_set_material_cost: 325,
+      line_set_cover_material_cost: 180,
+      disconnect_material_cost: 95,
+      misc_material_cost: 140,
+    },
+  });
+
+  const lines = out.manualItems.reduce((map, item) => {
+    map[item.code] = item;
+    return map;
+  }, {});
+  assert.equal(lines['MAT-LINESET'].taxable, true);
+  assert.equal(lines['MAT-LINESET-COVER'].taxable, true);
+  assert.equal(lines['MAT-DISCONNECT'].taxable, true);
+  assert.equal(lines['MAT-MISC'].taxable, true);
+  assert.equal(out.appliedItems.some((item) => item.code === 'MAT-LINESET'), true);
+});
+
 test('laborContextFromIntake maps install conditions into labor context', () => {
   const out = laborContextFromIntake({
     weekendDay: 'Sunday',

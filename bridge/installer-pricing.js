@@ -22,6 +22,13 @@ function normalizeInteger(value, defaultValue = 0) {
   return numeric;
 }
 
+function normalizeMoney(value, defaultValue = 0) {
+  if (value === undefined || value === null || value === '') return defaultValue;
+  const numeric = Number(`${value}`.replace(/[$,]/g, ''));
+  if (!Number.isFinite(numeric) || numeric < 0) return defaultValue;
+  return numeric;
+}
+
 function normalizeSystemType(value) {
   const normalized = normalizeLower(value).replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
   if (!normalized) return '';
@@ -40,7 +47,7 @@ function normalizeWeekendDay(value) {
   return '';
 }
 
-function createPieceRateItem(definition) {
+function createLaborItem(definition) {
   return {
     code: definition.code,
     name: definition.name,
@@ -50,6 +57,19 @@ function createPieceRateItem(definition) {
     laborHoursPerUnit: 0,
     taxable: false,
     notes: 'Installer piece-rate labor',
+  };
+}
+
+function createMaterialItem(definition) {
+  return {
+    code: definition.code,
+    name: definition.name,
+    itemType: definition.itemType || 'part',
+    quantity: definition.quantity ?? 1,
+    unitCost: definition.unitCost,
+    laborHoursPerUnit: 0,
+    taxable: true,
+    notes: 'Installer material allowance',
   };
 }
 
@@ -216,6 +236,90 @@ function resolveAdderDefinitions(laborContext = {}) {
   return adders;
 }
 
+function resolveMaterialDefinitions(laborContext = {}) {
+  const lineSetMaterialCost = normalizeMoney(
+    laborContext.line_set_material_cost ?? laborContext.lineSetMaterialCost,
+    0,
+  );
+  const lineSetCoverMaterialCost = normalizeMoney(
+    laborContext.line_set_cover_material_cost ?? laborContext.lineSetCoverMaterialCost,
+    0,
+  );
+  const miscMaterialCost = normalizeMoney(
+    laborContext.misc_material_cost ?? laborContext.miscMaterialCost ?? laborContext.random_material_cost,
+    0,
+  );
+  const disconnectMaterialCost = normalizeMoney(
+    laborContext.disconnect_material_cost ?? laborContext.disconnectMaterialCost,
+    0,
+  );
+  const padMaterialCost = normalizeMoney(
+    laborContext.pad_material_cost ?? laborContext.padMaterialCost,
+    0,
+  );
+  const condensateMaterialCost = normalizeMoney(
+    laborContext.condensate_material_cost ?? laborContext.condensateMaterialCost,
+    0,
+  );
+
+  const defs = [];
+  if (lineSetMaterialCost > 0) {
+    defs.push({
+      code: 'MAT-LINESET',
+      name: 'Line-set material allowance',
+      unitCost: lineSetMaterialCost,
+      itemType: 'part',
+      source: 'line_set_material',
+    });
+  }
+  if (lineSetCoverMaterialCost > 0) {
+    defs.push({
+      code: 'MAT-LINESET-COVER',
+      name: 'Line-set cover material allowance',
+      unitCost: lineSetCoverMaterialCost,
+      itemType: 'part',
+      source: 'line_set_cover_material',
+    });
+  }
+  if (disconnectMaterialCost > 0) {
+    defs.push({
+      code: 'MAT-DISCONNECT',
+      name: 'Disconnect/whip material allowance',
+      unitCost: disconnectMaterialCost,
+      itemType: 'part',
+      source: 'disconnect_material',
+    });
+  }
+  if (padMaterialCost > 0) {
+    defs.push({
+      code: 'MAT-EQUIPMENT-PAD',
+      name: 'Equipment pad material allowance',
+      unitCost: padMaterialCost,
+      itemType: 'part',
+      source: 'pad_material',
+    });
+  }
+  if (condensateMaterialCost > 0) {
+    defs.push({
+      code: 'MAT-CONDENSATE-DRAIN',
+      name: 'Condensate drain material allowance',
+      unitCost: condensateMaterialCost,
+      itemType: 'part',
+      source: 'condensate_material',
+    });
+  }
+  if (miscMaterialCost > 0) {
+    defs.push({
+      code: 'MAT-MISC',
+      name: 'Misc install material allowance',
+      unitCost: miscMaterialCost,
+      itemType: 'part',
+      source: 'misc_material',
+    });
+  }
+  return defs;
+}
+
 export function laborContextFromIntake(intake = {}) {
   const source = intake && typeof intake === 'object' ? intake : {};
   const explicitContext =
@@ -239,6 +343,36 @@ export function laborContextFromIntake(intake = {}) {
       explicitContext.high_voltage_run ??
       explicitContext.highVoltageRun ??
       (installConditions.electricalUpgrade === true ? 'under_50' : undefined),
+    line_set_material_cost:
+      explicitContext.line_set_material_cost ??
+      explicitContext.lineSetMaterialCost ??
+      source.line_set_material_cost ??
+      source.lineSetMaterialCost,
+    line_set_cover_material_cost:
+      explicitContext.line_set_cover_material_cost ??
+      explicitContext.lineSetCoverMaterialCost ??
+      source.line_set_cover_material_cost ??
+      source.lineSetCoverMaterialCost,
+    misc_material_cost:
+      explicitContext.misc_material_cost ??
+      explicitContext.miscMaterialCost ??
+      source.misc_material_cost ??
+      source.miscMaterialCost,
+    disconnect_material_cost:
+      explicitContext.disconnect_material_cost ??
+      explicitContext.disconnectMaterialCost ??
+      source.disconnect_material_cost ??
+      source.disconnectMaterialCost,
+    pad_material_cost:
+      explicitContext.pad_material_cost ??
+      explicitContext.padMaterialCost ??
+      source.pad_material_cost ??
+      source.padMaterialCost,
+    condensate_material_cost:
+      explicitContext.condensate_material_cost ??
+      explicitContext.condensateMaterialCost ??
+      source.condensate_material_cost ??
+      source.condensateMaterialCost,
   };
 }
 
@@ -271,7 +405,7 @@ export function applyInstallerPieceRatePricing({
   const systemType = inferEquipmentSystemType(selections, catalog);
   const baseLabor = resolveBaseLaborDefinition(systemType);
   if (baseLabor && !dedupe.existingCodes.has(baseLabor.code)) {
-    const next = createPieceRateItem(baseLabor);
+    const next = createLaborItem(baseLabor);
     outputItems.push(next);
     dedupe.existingCodes.add(baseLabor.code);
     appliedItems.push({ ...baseLabor, quantity: next.quantity });
@@ -280,10 +414,19 @@ export function applyInstallerPieceRatePricing({
   const adders = resolveAdderDefinitions(context);
   for (const adder of adders) {
     if (dedupe.existingCodes.has(adder.code)) continue;
-    const next = createPieceRateItem(adder);
+    const next = createLaborItem(adder);
     outputItems.push(next);
     dedupe.existingCodes.add(adder.code);
     appliedItems.push({ ...adder, quantity: next.quantity });
+  }
+
+  const materials = resolveMaterialDefinitions(context);
+  for (const material of materials) {
+    if (dedupe.existingCodes.has(material.code)) continue;
+    const next = createMaterialItem(material);
+    outputItems.push(next);
+    dedupe.existingCodes.add(material.code);
+    appliedItems.push({ ...material, quantity: next.quantity, taxable: true });
   }
 
   return {
