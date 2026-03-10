@@ -98,7 +98,7 @@ test('buildHousecallExportRequest infers add_to_job mode from job_id', () => {
     job_id: 'job_999',
   });
   assert.equal(request.mode, 'add_to_job');
-  assert.equal(request.path, '/v1/jobs/job_999/estimates');
+  assert.equal(request.path, '/jobs/job_999/estimates');
   assert.equal(request.method, 'POST');
 });
 
@@ -108,7 +108,7 @@ test('buildHousecallExportRequest infers update_estimate mode from estimate_id',
     estimate_id: 'est_999',
   });
   assert.equal(request.mode, 'update_estimate');
-  assert.equal(request.path, '/v1/estimates/est_999');
+  assert.equal(request.path, '/estimates/est_999');
   assert.equal(request.method, 'PATCH');
 });
 
@@ -121,7 +121,7 @@ test('buildHousecallExportRequest creates option-note payload when mode is add_o
     estimate_option_id: 'opt_123',
   });
   assert.equal(request.mode, 'add_option_note');
-  assert.equal(request.path, '/v1/estimates/est_321/options/opt_123/notes');
+  assert.equal(request.path, '/estimates/est_321/options/opt_123/notes');
   assert.equal(request.method, 'POST');
   assert.equal(request.payload.note, 'Add attic insulation option');
 });
@@ -129,10 +129,10 @@ test('buildHousecallExportRequest creates option-note payload when mode is add_o
 test('buildHousecallAppointmentLookupRequest resolves appointment template', () => {
   const lookup = buildHousecallAppointmentLookupRequest({
     appointment_id: 'apt_111',
-    appointment_lookup_path: '/v1/schedule/{appointment_id}',
+    appointment_lookup_path: '/schedule/{appointment_id}',
   });
   assert.equal(lookup.method, 'GET');
-  assert.equal(lookup.path, '/v1/schedule/apt_111');
+  assert.equal(lookup.path, '/schedule/apt_111');
 });
 
 test('buildHousecallUpsertPlan auto strategy orders update then add_to_job then create', () => {

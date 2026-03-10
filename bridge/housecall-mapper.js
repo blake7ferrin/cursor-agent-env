@@ -235,19 +235,19 @@ export function buildHousecallExportRequest(estimate, options = {}) {
   const createEstimatePath =
     asTrimmedString(options.createEstimatePath || options.create_estimate_path) ||
     process.env.HOUSECALL_PRO_CREATE_ESTIMATE_PATH ||
-    '/v1/estimates';
+    '/estimates';
   const addToJobPath =
     asTrimmedString(options.addToJobPath || options.add_to_job_path) ||
     process.env.HOUSECALL_PRO_ADD_TO_JOB_ESTIMATE_PATH ||
-    '/v1/jobs/{job_id}/estimates';
+    '/jobs/{job_id}/estimates';
   const updateEstimatePath =
     asTrimmedString(options.updateEstimatePath || options.update_estimate_path) ||
     process.env.HOUSECALL_PRO_UPDATE_ESTIMATE_PATH ||
-    '/v1/estimates/{estimate_id}';
+    '/estimates/{estimate_id}';
   const addOptionNotePath =
     asTrimmedString(options.addOptionNotePath || options.add_option_note_path) ||
     process.env.HOUSECALL_PRO_ADD_OPTION_NOTE_PATH ||
-    '/v1/estimates/{estimate_id}/options/{estimate_option_id}/notes';
+    '/estimates/{estimate_id}/options/{estimate_option_id}/notes';
 
   const hasPayloadOverride = options.payloadOverride && typeof options.payloadOverride === 'object';
   const basePayload = hasPayloadOverride ? options.payloadOverride : buildHousecallEstimatePayload(estimate, options);

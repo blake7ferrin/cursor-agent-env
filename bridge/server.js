@@ -19,6 +19,7 @@ import * as cursor from './cursor-api.js';
 import { buildChangeoutPlan } from './estimator-changeout.js';
 import { buildEstimate, renderEstimateHtml } from './estimator-engine.js';
 import { EstimatorValidationError } from './estimator-domain.js';
+import { applyInstallerPieceRatePricing } from './installer-pricing.js';
 import {
   buildHousecallAppointmentLookupRequest,
   buildHousecallUpsertPlan,
@@ -143,6 +144,14 @@ function asTrimmedString(value) {
   if (value === undefined || value === null) return '';
   const normalized = `${value}`.trim();
   return normalized;
+}
+
+function resolveLaborContext(body = {}) {
+  if (body?.labor_context && typeof body.labor_context === 'object') return body.labor_context;
+  if (body?.laborContext && typeof body.laborContext === 'object') return body.laborContext;
+  if (body?.project?.labor_context && typeof body.project.labor_context === 'object') return body.project.labor_context;
+  if (body?.project?.laborContext && typeof body.project.laborContext === 'object') return body.project.laborContext;
+  return {};
 }
 
 function mergeHousecallContext(primary = {}, fallback = {}) {
@@ -444,8 +453,8 @@ app.post('/integrations/housecall/request', requireBridgeAuth, applyRateLimit, (
   if (!path || typeof path !== 'string') {
     return res.status(400).json({ error: 'Missing path' });
   }
-  if (!/^\/v\d+\//.test(path) && !path.startsWith('https://') && !path.startsWith('http://')) {
-    return res.status(400).json({ error: 'path must start with /v<version>/ or be an absolute URL' });
+  if (!path.startsWith('/') && !path.startsWith('https://') && !path.startsWith('http://')) {
+    return res.status(400).json({ error: 'path must start with / or be an absolute URL' });
   }
   try {
     const result = await mcpHousecallRequest({
@@ -691,11 +700,17 @@ app.post('/estimator/estimate', requireBridgeAuth, applyRateLimit, validateBody(
   try {
     const profile = await getEstimatorProfile(userId);
     const { runtimeProfile, catalogRuntime } = await resolveRuntimeEstimatorProfile(profile, req.body);
+    const installerPricing = applyInstallerPieceRatePricing({
+      selections: req.body?.selections,
+      manualItems: req.body?.manual_items,
+      catalog: runtimeProfile.catalog,
+      laborContext: resolveLaborContext(req.body),
+    });
     const estimate = buildEstimate({
       config: runtimeProfile.config,
       catalog: runtimeProfile.catalog,
       selections: req.body?.selections,
-      manual_items: req.body?.manual_items,
+      manual_items: installerPricing.manualItems,
       customer: req.body?.customer,
       project: req.body?.project,
       adjustments: req.body?.adjustments,
@@ -709,6 +724,7 @@ app.post('/estimator/estimate', requireBridgeAuth, applyRateLimit, validateBody(
       estimate,
       printable_html: html,
       catalog_runtime: catalogRuntime,
+      installer_pricing: installerPricing,
     });
   } catch (err) {
     return handleEstimatorError(err, res);
@@ -733,15 +749,22 @@ app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, valid
   try {
     let estimate = req.body?.estimate;
     let catalogRuntime = null;
+    let installerPricing = null;
     if (!estimate || typeof estimate !== 'object') {
       const profile = await getEstimatorProfile(userId);
       const runtime = await resolveRuntimeEstimatorProfile(profile, req.body);
       catalogRuntime = runtime.catalogRuntime;
+      installerPricing = applyInstallerPieceRatePricing({
+        selections: req.body?.selections,
+        manualItems: req.body?.manual_items,
+        catalog: runtime.runtimeProfile.catalog,
+        laborContext: resolveLaborContext(req.body),
+      });
       estimate = buildEstimate({
         config: runtime.runtimeProfile.config,
         catalog: runtime.runtimeProfile.catalog,
         selections: req.body?.selections,
-        manual_items: req.body?.manual_items,
+        manual_items: installerPricing.manualItems,
         customer: req.body?.customer,
         project: req.body?.project,
         adjustments: req.body?.adjustments,
@@ -856,6 +879,7 @@ app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, valid
       const dryRunPayload = {
         dry_run: true,
         estimate,
+        installer_pricing: installerPricing,
         catalog_runtime: catalogRuntime,
         upsert_strategy: exportPlan.strategy,
         resolved_context: exportPlan.context,
@@ -925,6 +949,7 @@ app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, valid
 
     const exportPayload = {
       estimate,
+      installer_pricing: installerPricing,
       catalog_runtime: catalogRuntime,
       upsert_strategy: exportPlan.strategy,
       resolved_context: exportPlan.context,

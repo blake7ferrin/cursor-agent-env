@@ -108,7 +108,7 @@ test('POST /integrations/housecall/request returns 403 when debug flag not enabl
     .post('/integrations/housecall/request')
     .set(auth)
     .set('Content-Type', 'application/json')
-    .send({ path: '/v1/customers' });
+    .send({ path: '/customers' });
   assert.equal(res.status, 403);
   assert.ok(res.body?.error?.includes('disabled'));
 });
@@ -159,7 +159,7 @@ test('POST /mcp/call housecall.request returns tool error when debug disabled', 
     .post('/mcp/call')
     .set(auth)
     .set('Content-Type', 'application/json')
-    .send({ tool: 'housecall.request', arguments: { path: '/v1/customers' } });
+    .send({ tool: 'housecall.request', arguments: { path: '/customers' } });
   assert.equal(res.status, 200);
   assert.equal(res.body?.ok, false);
   assert.equal(res.body?.code, 'TOOL_DISABLED');

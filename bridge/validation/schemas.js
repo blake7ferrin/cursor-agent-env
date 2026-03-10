@@ -24,6 +24,7 @@ export const changeoutPlanBodySchema = z.object({
   use_imported_catalog: z.boolean().optional(),
   include_user_catalog: z.boolean().optional(),
   refresh_import_catalog: z.boolean().optional(),
+  labor_context: optionalObject,
   intake: optionalObject,
   customer: optionalObject,
   project: optionalObject,
@@ -37,6 +38,7 @@ export const estimateBodySchema = z.object({
   use_imported_catalog: z.boolean().optional(),
   include_user_catalog: z.boolean().optional(),
   refresh_import_catalog: z.boolean().optional(),
+  labor_context: optionalObject,
   selections: z.array(z.record(z.string(), z.unknown())).optional(),
   manual_items: z.array(z.record(z.string(), z.unknown())).optional(),
   customer: optionalObject,
@@ -49,6 +51,7 @@ export const estimateBodySchema = z.object({
 export const exportHousecallBodySchema = z.object({
   user_id: z.string().min(1, 'user_id is required').optional(),
   idempotency_key: z.string().min(1).optional(),
+  labor_context: optionalObject,
   customer: optionalObject,
   project: optionalObject,
   estimate: optionalObject,
@@ -71,8 +74,8 @@ export const housecallRequestBodySchema = z.object({
   headers: z.record(z.string(), z.unknown()).optional(),
 }).refine((data) => {
   const path = data.path || '';
-  return /^\/v\d+\//.test(path) || path.startsWith('https://') || path.startsWith('http://');
-}, { message: 'path must start with /v<version>/ or be an absolute URL', path: ['path'] });
+  return path.startsWith('/') || path.startsWith('https://') || path.startsWith('http://');
+}, { message: 'path must start with / or be an absolute URL', path: ['path'] });
 
 /**
  * Format Zod errors into 400 response shape with field-level details.

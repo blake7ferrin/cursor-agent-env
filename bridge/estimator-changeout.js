@@ -1,4 +1,5 @@
 import { buildEstimate } from './estimator-engine.js';
+import { applyInstallerPieceRatePricing, laborContextFromIntake } from './installer-pricing.js';
 
 const DEFAULT_PRIMARY_BRANDS = ['AC Pro', 'Day & Night'];
 
@@ -479,10 +480,18 @@ export function buildChangeoutPlan({ profile = {}, intake = {}, customer = {}, p
 
   let draftEstimateRequest = null;
   let estimatePreview = null;
+  let installer_labor = null;
   if (lane === 'auto_ready' && selectedOption) {
+    const laborContext = laborContextFromIntake(intake);
+    const installerPricing = applyInstallerPieceRatePricing({
+      selections: [{ sku: selectedOption.sku, quantity: 1 }],
+      manualItems: complexityAdders,
+      catalog,
+      laborContext,
+    });
     draftEstimateRequest = {
       selections: [{ sku: selectedOption.sku, quantity: 1 }],
-      manual_items: complexityAdders,
+      manual_items: installerPricing.manualItems,
       customer,
       project: {
         ...project,
@@ -494,6 +503,12 @@ export function buildChangeoutPlan({ profile = {}, intake = {}, customer = {}, p
         permitFee: normalizeNumber(intake.permitFee),
         tripCharge: normalizeNumber(intake.tripCharge),
       },
+    };
+    installer_labor = {
+      enabled: installerPricing.enabled,
+      system_type: installerPricing.systemType || '',
+      applied_items: installerPricing.appliedItems,
+      labor_context: installerPricing.laborContext,
     };
     estimatePreview = buildEstimate({
       config,
@@ -527,6 +542,7 @@ export function buildChangeoutPlan({ profile = {}, intake = {}, customer = {}, p
     recommended_options: recommendedOptions,
     complexity_adders: complexityAdders,
     complexity_adders_resolution: complexityAddersResolution,
+    installer_labor,
     vendor_quote: vendorChecklist,
     profit_targets: {
       targetGrossMargin: config.targetGrossMargin ?? 0.4,

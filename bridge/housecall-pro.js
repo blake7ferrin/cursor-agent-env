@@ -152,12 +152,12 @@ export function getHousecallConfigSummary() {
     hasAccessToken: hasBearerToken(),
     hasRefreshToken: Boolean(runtimeTokenState.refreshToken || process.env.HOUSECALL_PRO_REFRESH_TOKEN),
     hasClientCredentials: Boolean(process.env.HOUSECALL_PRO_CLIENT_ID && process.env.HOUSECALL_PRO_CLIENT_SECRET),
-    createEstimatePath: process.env.HOUSECALL_PRO_CREATE_ESTIMATE_PATH || '/v1/estimates',
-    addToJobEstimatePath: process.env.HOUSECALL_PRO_ADD_TO_JOB_ESTIMATE_PATH || '/v1/jobs/{job_id}/estimates',
-    updateEstimatePath: process.env.HOUSECALL_PRO_UPDATE_ESTIMATE_PATH || '/v1/estimates/{estimate_id}',
+    createEstimatePath: process.env.HOUSECALL_PRO_CREATE_ESTIMATE_PATH || '/estimates',
+    addToJobEstimatePath: process.env.HOUSECALL_PRO_ADD_TO_JOB_ESTIMATE_PATH || '/jobs/{job_id}/estimates',
+    updateEstimatePath: process.env.HOUSECALL_PRO_UPDATE_ESTIMATE_PATH || '/estimates/{estimate_id}',
     addOptionNotePath:
       process.env.HOUSECALL_PRO_ADD_OPTION_NOTE_PATH ||
-      '/v1/estimates/{estimate_id}/options/{estimate_option_id}/notes',
+      '/estimates/{estimate_id}/options/{estimate_option_id}/notes',
     appointmentLookupPath: process.env.HOUSECALL_PRO_APPOINTMENT_LOOKUP_PATH || '',
   };
 }
@@ -203,7 +203,7 @@ export async function housecallRequest({ path, method = 'GET', query, body, head
 }
 
 export async function testHousecallConnection(path) {
-  const testPath = path || process.env.HOUSECALL_PRO_TEST_PATH || '/v1/customers';
+  const testPath = path || process.env.HOUSECALL_PRO_TEST_PATH || '/customers';
   return housecallRequest({
     path: testPath,
     method: 'GET',
@@ -217,7 +217,7 @@ export async function testHousecallConnection(path) {
  * @returns {Promise<{ ok: boolean, status: number, body?: { customers?: object[], data?: object[] } }>}
  */
 export async function listHousecallCustomers(query = {}) {
-  const path = '/v1/customers';
+  const path = '/customers';
   const queryParams = {};
   if (query.page_size != null) queryParams.page_size = query.page_size;
   if (query.page != null) queryParams.page = query.page;

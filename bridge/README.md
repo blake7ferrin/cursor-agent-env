@@ -453,7 +453,7 @@ curl -X POST http://localhost:3000/estimator/export/housecall \
       "auto_upsert": true,
       "appointment_id": "apt_123",
       "resolve_context": true,
-      "appointment_lookup_path": "/v1/schedule/{appointment_id}",
+      "appointment_lookup_path": "/schedule/{appointment_id}",
       "dry_run": true
     }
   }'
@@ -467,7 +467,7 @@ curl -X POST http://localhost:3000/integrations/housecall/resolve-context \
   -H "x-bridge-token: $BRIDGE_AUTH_TOKEN" \
   -d '{
     "appointment_id": "apt_123",
-    "appointment_lookup_path": "/v1/schedule/{appointment_id}"
+    "appointment_lookup_path": "/schedule/{appointment_id}"
   }'
 ```
 
@@ -478,7 +478,7 @@ You can also do this inside export by providing:
   "housecall": {
     "appointment_id": "apt_123",
     "resolve_context": true,
-    "appointment_lookup_path": "/v1/schedule/{appointment_id}"
+    "appointment_lookup_path": "/schedule/{appointment_id}"
   }
 }
 ```
