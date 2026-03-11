@@ -20,3 +20,5 @@ export {
 } from './catalog-tool.js';
 
 export { resolveContext as schedulerResolveContext } from './scheduler-context-tool.js';
+
+export { getConfig as gdriveGetConfig } from './google-drive-tool.js';

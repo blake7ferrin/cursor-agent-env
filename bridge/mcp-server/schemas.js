@@ -58,6 +58,8 @@ export const schedulerResolveContextInput = z.object({
   appointment_lookup_query: z.record(z.string(), z.unknown()).optional(),
 });
 
+export const gdriveGetConfigInput = z.object({});
+
 /** Map tool name -> Zod schema */
 export const toolInputSchemas = {
   'housecall.get_config': housecallGetConfigInput,
@@ -70,4 +72,5 @@ export const toolInputSchemas = {
   'catalog.get_item_by_sku': catalogGetItemBySkuInput,
   'catalog.query_by_attribute': catalogQueryByAttributeInput,
   'scheduler.resolve_context': schedulerResolveContextInput,
+  'gdrive.get_config': gdriveGetConfigInput,
 };
