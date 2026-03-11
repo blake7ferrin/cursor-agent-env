@@ -37,6 +37,7 @@ Durable facts, preferences, and decisions. The agent updates this file when the 
 - User has full pricebooks/equipment brochures/troubleshooting manuals for AC Pro and Day & Night, with potential access to more brand data; desired workflow is data-plate/photo-led residential automation plus assisted quote workflow for oddball/commercial/other-brand jobs.
 - Preferred baseline estimator assumptions (2026-02-25): labor rate = `$125/hr` all-in, tax on purchases ≈ `9%`, no permit/trip defaults for changeouts, target margin `40%`, hard minimum margin `30%`.
 - Decision: keep estimator margin model as gross-margin guardrail because labor rate is fully loaded; treat this as the practical net-profit proxy for quoting unless accounting-level net reporting is later added.
+- User requested adding a construction-estimator skill (2026-03-11) to support spreadsheet-driven estimating logic alongside HVAC workflows.
 
 ## HVAC estimator data ingestion
 
