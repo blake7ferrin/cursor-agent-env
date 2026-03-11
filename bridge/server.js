@@ -64,6 +64,9 @@ import { getCodexUsageSummary } from './codex-usage-store.js';
 
 const PORT = process.env.PORT || 3000;
 const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
+const telegramPollingEnabled = !['0', 'false', 'no'].includes(
+  `${process.env.TELEGRAM_POLLING_ENABLED || 'true'}`.trim().toLowerCase(),
+);
 const agentEnvRepo = process.env.AGENT_ENV_REPO || 'https://github.com/your-org/cursor-agent-env';
 /** Optional: branch or ref for the agent repo (e.g. cursor/hvac-pricing-agent-3304). When set, new agents use this ref; unset = API default branch (usually main). */
 const agentEnvRef = process.env.AGENT_ENV_REF || null;
@@ -1386,7 +1389,7 @@ app.post('/ingest', requireBridgeAuth, async (req, res) => {
 
 // ----- Telegram -----
 
-if (telegramToken) {
+if (telegramToken && telegramPollingEnabled) {
   const bot = new TelegramBot(telegramToken, { polling: true });
 
   bot.on('message', async (msg) => {
@@ -1437,8 +1440,10 @@ if (telegramToken) {
   });
 
   console.log('Telegram bot polling enabled');
-} else {
+} else if (!telegramToken) {
   console.log('TELEGRAM_BOT_TOKEN not set; Telegram disabled');
+} else {
+  console.log('TELEGRAM_POLLING_ENABLED is false; Telegram polling disabled');
 }
 
 const isServerEntry =
