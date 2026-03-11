@@ -22,6 +22,7 @@ Durable facts, preferences, and decisions. The agent updates this file when the 
   - See **docs/orchestrator-protocol.md** (HOUSECALL_EXPORT) and **.cursor/skills/hvac-estimator** for payload shape and examples.
 - **Do not** write your own script, call the Housecall API yourself, or say that no integration exists. The integration is in the bridge; your role is to output the `HOUSECALL_EXPORT` line with the right payload. Use dry_run first when the user hasn’t confirmed live send. See **docs/HOUSECALL-AGENT.md** for a short summary.
 - **Existing customer:** When sending an estimate, if the user does not provide a Housecall customer ID, the bridge tries to find an existing customer by name, email, or phone (it calls Housecall’s customer list and matches). So the agent should pass `customer: { name: "..." }` (or email/phone when known); the bridge will link to an existing customer when one matches, otherwise create a new one.
+- **Estimate option endpoint behavior (2026-03-11):** direct estimate update requests to `/estimates/{estimate_id}` returned 404 for `PATCH`/`PUT` in this account, but adding options to an existing estimate works with `POST /estimates/{estimate_id}/options` (payload shape `{name,message,line_items}`).
 
 ## Business automation direction
 
