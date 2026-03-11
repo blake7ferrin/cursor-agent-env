@@ -127,6 +127,41 @@ export async function runTool(toolName, args, options = {}) {
         const result = mcp.gdriveGetConfig();
         return { ok: true, result };
       }
+      case 'gdrive.list_files': {
+        const result = await mcp.gdriveListFiles({
+          q: a.q,
+          page_size: a.page_size,
+          page_token: a.page_token,
+          folder_id: a.folder_id,
+          shared_drive_id: a.shared_drive_id,
+          order_by: a.order_by,
+          fields: a.fields,
+        });
+        return { ok: true, result };
+      }
+      case 'gdrive.upload_file': {
+        const result = await mcp.gdriveUploadFile({
+          name: a.name,
+          content_base64: a.content_base64,
+          mime_type: a.mime_type,
+          folder_id: a.folder_id,
+          shared_drive_id: a.shared_drive_id,
+        });
+        return { ok: true, result };
+      }
+      case 'gdrive.download_file': {
+        const result = await mcp.gdriveDownloadFile({
+          file_id: a.file_id,
+          shared_drive_id: a.shared_drive_id,
+        });
+        return { ok: true, result };
+      }
+      case 'codex.get_usage': {
+        const result = await mcp.codexGetUsage({
+          month: a.month,
+        });
+        return { ok: true, result };
+      }
       default:
         return { ok: false, error: `Unknown tool: ${toolName}`, code: 'UNKNOWN_TOOL' };
     }
@@ -152,5 +187,9 @@ export function listTools() {
     { name: 'catalog.query_by_attribute', description: 'Query catalog by attribute key/value.', inputSchema: { type: 'object', properties: { attribute_key: { type: 'string' }, value: { type: 'string' }, profile: { type: 'string' } }, required: ['attribute_key', 'value'] } },
     { name: 'scheduler.resolve_context', description: 'Resolve appointment to job/estimate context (delegates to Housecall).', inputSchema: { type: 'object', properties: { appointment_id: { type: 'string' }, appointment_lookup_path: { type: 'string' }, appointment_lookup_method: { type: 'string' }, appointment_lookup_query: { type: 'object' } }, required: ['appointment_id'] } },
     { name: 'gdrive.get_config', description: 'Get Google Drive integration config summary (auth mode, folder defaults, scopes).', inputSchema: { type: 'object', properties: {} } },
+    { name: 'gdrive.list_files', description: 'List Google Drive files with optional query/pagination and folder scope.', inputSchema: { type: 'object', properties: { q: { type: 'string' }, page_size: { type: 'number' }, page_token: { type: 'string' }, folder_id: { type: 'string' }, shared_drive_id: { type: 'string' }, order_by: { type: 'string' }, fields: { type: 'string' } } } },
+    { name: 'gdrive.upload_file', description: 'Upload a file to Google Drive from base64 content.', inputSchema: { type: 'object', properties: { name: { type: 'string' }, content_base64: { type: 'string' }, mime_type: { type: 'string' }, folder_id: { type: 'string' }, shared_drive_id: { type: 'string' } }, required: ['name', 'content_base64'] } },
+    { name: 'gdrive.download_file', description: 'Download a Google Drive file and return base64 content.', inputSchema: { type: 'object', properties: { file_id: { type: 'string' }, shared_drive_id: { type: 'string' } }, required: ['file_id'] } },
+    { name: 'codex.get_usage', description: 'Get codex monthly usage summary (tokens, requests, estimated USD cost).', inputSchema: { type: 'object', properties: { month: { type: 'string', description: 'YYYY-MM; defaults to current month' } } } },
   ];
 }

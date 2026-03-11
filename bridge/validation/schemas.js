@@ -77,6 +77,15 @@ export const housecallRequestBodySchema = z.object({
   return path.startsWith('/') || path.startsWith('https://') || path.startsWith('http://');
 }, { message: 'path must start with / or be an absolute URL', path: ['path'] });
 
+// ----- /integrations/gdrive/upload -----
+export const gdriveUploadBodySchema = z.object({
+  name: z.string().min(1, 'name is required'),
+  content_base64: z.string().min(1, 'content_base64 is required'),
+  mime_type: z.string().optional(),
+  folder_id: z.string().optional(),
+  shared_drive_id: z.string().optional(),
+});
+
 /**
  * Format Zod errors into 400 response shape with field-level details.
  * @param {import('zod').ZodError} err

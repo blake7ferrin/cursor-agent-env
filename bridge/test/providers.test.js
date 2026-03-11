@@ -218,3 +218,98 @@ test('codex provider returns not found for unknown agent ids', async () => {
   await assert.rejects(provider.getAgent('missing'), /agent not found/);
   await assert.rejects(provider.getAgentConversation('missing'), /agent not found/);
 });
+
+test('codex sessions persist across provider instances', async () => {
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (_url, options = {}) => {
+      const body = JSON.parse(options.body || '{}');
+      calls.push(body);
+      if (calls.length === 1) {
+        return makeJsonResponse(200, {
+          id: 'resp_persist_1',
+          status: 'completed',
+          output_text: 'first',
+          output: [{ role: 'assistant', content: [{ type: 'output_text', text: 'first' }] }],
+        });
+      }
+      return makeJsonResponse(200, {
+        id: 'resp_persist_2',
+        status: 'completed',
+        output_text: 'second',
+        output: [{ role: 'assistant', content: [{ type: 'output_text', text: 'second' }] }],
+      });
+    };
+
+    const providerA = createAgentProviderFromEnv({
+      provider: 'codex',
+      apiKey: 'test-openai-key',
+      modelMini: 'gpt-mini-test',
+      modelFull: 'gpt-full-test',
+      routingMode: 'mini',
+    });
+    const launched = await providerA.launchAgent({ promptText: 'persist me' });
+
+    const providerB = createAgentProviderFromEnv({
+      provider: 'codex',
+      apiKey: 'test-openai-key',
+      modelMini: 'gpt-mini-test',
+      modelFull: 'gpt-full-test',
+      routingMode: 'mini',
+    });
+    const followup = await providerB.addFollowup(launched.id, 'still there?');
+    assert.equal(followup.id, launched.id);
+    assert.equal(calls[1].previous_response_id, 'resp_persist_1');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('codex provider forces mini in auto mode when budget threshold is reached', async () => {
+  const calls = [];
+  const recordedUsage = [];
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (_url, options = {}) => {
+      const body = JSON.parse(options.body || '{}');
+      calls.push(body);
+      return makeJsonResponse(200, {
+        id: 'resp_budget_1',
+        status: 'completed',
+        output_text: 'ok',
+        usage: { input_tokens: 1000, output_tokens: 500, total_tokens: 1500 },
+        output: [{ role: 'assistant', content: [{ type: 'output_text', text: 'ok' }] }],
+      });
+    };
+
+    const provider = createAgentProviderFromEnv({
+      provider: 'codex',
+      apiKey: 'test-openai-key',
+      modelFull: 'gpt-full-test',
+      modelMini: 'gpt-mini-test',
+      routingMode: 'auto',
+      budgetMonthlyUsd: 10,
+      budgetForceMiniThresholdPct: 0.8,
+      getMonthlyCostUsd: async () => 9,
+      recordUsage: async (entry) => {
+        recordedUsage.push(entry);
+      },
+    });
+
+    const launch = await provider.launchAgent({
+      promptText: 'Please refactor this multi-file architecture and run root cause analysis.',
+      user_id: 'budget-user',
+    });
+
+    assert.equal(launch.route, 'budget_force_mini');
+    assert.equal(launch.model, 'gpt-mini-test');
+    assert.equal(calls[0].model, 'gpt-mini-test');
+    assert.equal(recordedUsage.length, 1);
+    assert.equal(recordedUsage[0].user_id, 'budget-user');
+    assert.equal(recordedUsage[0].model, 'gpt-mini-test');
+    assert.ok(recordedUsage[0].cost_usd > 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

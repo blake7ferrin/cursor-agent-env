@@ -1,0 +1,142 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Cursor Bridge ChatGPT Actions API",
+    "version": "1.0.0",
+    "description": "Action surface for ChatGPT custom GPT integration."
+  },
+  "servers": [
+    {
+      "url": "https://your-bridge-domain.example.com"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ChatGptToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-chatgpt-token"
+      }
+    },
+    "schemas": {
+      "ChatRequest": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string" },
+          "message": { "type": "string" },
+          "async": { "type": "boolean" }
+        },
+        "required": ["message"]
+      },
+      "ChatResponse": {
+        "type": "object",
+        "properties": {
+          "reply": { "type": "string" },
+          "agent_id": { "type": "string" },
+          "state": { "type": "string" },
+          "job_id": { "type": "string" },
+          "status": { "type": "string" },
+          "status_url": { "type": "string" }
+        }
+      }
+    }
+  },
+  "security": [{ "ChatGptToken": [] }],
+  "paths": {
+    "/chatgpt/health": {
+      "get": {
+        "operationId": "chatgptHealth",
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/chatgpt/chat": {
+      "post": {
+        "operationId": "chatgptChat",
+        "summary": "Send a message to the assistant",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ChatRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync chat result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ChatResponse" }
+              }
+            }
+          },
+          "202": {
+            "description": "Async accepted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ChatResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chatgpt/jobs/{id}": {
+      "get": {
+        "operationId": "chatgptGetJob",
+        "summary": "Get async job status",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/chatgpt/usage/codex": {
+      "get": {
+        "operationId": "chatgptCodexUsage",
+        "summary": "Get codex usage summary",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "pattern": "^\\d{4}-\\d{2}$" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage summary"
+          }
+        }
+      }
+    },
+    "/chatgpt/gdrive/config": {
+      "get": {
+        "operationId": "chatgptGdriveConfig",
+        "summary": "Get Google Drive integration config summary",
+        "responses": {
+          "200": {
+            "description": "Google Drive config"
+          }
+        }
+      }
+    }
+  }
+}

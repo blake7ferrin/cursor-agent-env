@@ -59,6 +59,29 @@ export const schedulerResolveContextInput = z.object({
 });
 
 export const gdriveGetConfigInput = z.object({});
+export const gdriveListFilesInput = z.object({
+  q: z.string().optional(),
+  page_size: z.number().int().positive().max(1000).optional(),
+  page_token: z.string().optional(),
+  folder_id: z.string().optional(),
+  shared_drive_id: z.string().optional(),
+  order_by: z.string().optional(),
+  fields: z.string().optional(),
+});
+export const gdriveUploadFileInput = z.object({
+  name: z.string().min(1),
+  content_base64: z.string().min(1),
+  mime_type: z.string().optional(),
+  folder_id: z.string().optional(),
+  shared_drive_id: z.string().optional(),
+});
+export const gdriveDownloadFileInput = z.object({
+  file_id: z.string().min(1),
+  shared_drive_id: z.string().optional(),
+});
+export const codexGetUsageInput = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+});
 
 /** Map tool name -> Zod schema */
 export const toolInputSchemas = {
@@ -73,4 +96,8 @@ export const toolInputSchemas = {
   'catalog.query_by_attribute': catalogQueryByAttributeInput,
   'scheduler.resolve_context': schedulerResolveContextInput,
   'gdrive.get_config': gdriveGetConfigInput,
+  'gdrive.list_files': gdriveListFilesInput,
+  'gdrive.upload_file': gdriveUploadFileInput,
+  'gdrive.download_file': gdriveDownloadFileInput,
+  'codex.get_usage': codexGetUsageInput,
 };

@@ -34,6 +34,9 @@ import {
   catalogGetIngestReport,
   catalogLoadCatalog,
   gdriveGetConfig,
+  gdriveListFiles,
+  gdriveUploadFile,
+  gdriveDownloadFile,
 } from './mcp/index.js';
 import {
   getEstimatorProfile,
@@ -52,10 +55,12 @@ import {
   estimateBodySchema,
   exportHousecallBodySchema,
   housecallRequestBodySchema,
+  gdriveUploadBodySchema,
 } from './validation/schemas.js';
 import { createJob, getJob, updateJob } from './jobs-store.js';
 import { getIdempotencyResult, setIdempotencyResult } from './idempotency-store.js';
 import { runTool, listTools } from './mcp-server/tool-runner.js';
+import { getCodexUsageSummary } from './codex-usage-store.js';
 
 const PORT = process.env.PORT || 3000;
 const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -63,6 +68,7 @@ const agentEnvRepo = process.env.AGENT_ENV_REPO || 'https://github.com/your-org/
 /** Optional: branch or ref for the agent repo (e.g. cursor/hvac-pricing-agent-3304). When set, new agents use this ref; unset = API default branch (usually main). */
 const agentEnvRef = process.env.AGENT_ENV_REF || null;
 const bridgeAuthToken = process.env.BRIDGE_AUTH_TOKEN;
+const chatgptActionToken = process.env.CHATGPT_ACTION_TOKEN || bridgeAuthToken;
 const localActionEndpoint = process.env.LOCAL_ACTION_ENDPOINT;
 const localActionAuthToken = process.env.LOCAL_ACTION_AUTH_TOKEN;
 const subagentRepoAllowlist = parseCsv(process.env.SUBAGENT_REPO_ALLOWLIST);
@@ -115,9 +121,27 @@ function extractAuthToken(req) {
   return '';
 }
 
+function extractChatgptActionToken(req) {
+  const headerToken = req.header('x-chatgpt-token');
+  if (headerToken) return headerToken.trim();
+  const authHeader = req.header('authorization') || '';
+  if (authHeader.toLowerCase().startsWith('bearer ')) {
+    return authHeader.slice('bearer '.length).trim();
+  }
+  return '';
+}
+
 function requireBridgeAuth(req, res, next) {
   const token = extractAuthToken(req);
   if (!token || token !== bridgeAuthToken) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  return next();
+}
+
+function requireChatgptActionAuth(req, res, next) {
+  const token = extractChatgptActionToken(req);
+  if (!token || token !== chatgptActionToken) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   return next();
@@ -191,12 +215,13 @@ async function sendToAgent(userId, text) {
 
   try {
     if (existingId) {
-      res = await agentProvider.addFollowup(existingId, prompt);
+      res = await agentProvider.addFollowup(existingId, prompt, { user_id: userId });
     } else {
       res = await agentProvider.launchAgent({
         repository: agentEnvRepo,
         ...(agentEnvRef && { ref: agentEnvRef }),
         promptText: prompt,
+        user_id: userId,
       });
       agentId = res.id ?? res.agent_id;
       if (agentId) await setAgentId(userId, agentId);
@@ -346,6 +371,36 @@ app.get('/health', (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/usage/codex', requireBridgeAuth, async (req, res) => {
+  try {
+    const month = typeof req.query.month === 'string' ? req.query.month : undefined;
+    const summary = await getCodexUsageSummary(month);
+    return res.json(summary);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message || 'Failed to load codex usage summary' });
+  }
+});
+
+app.get('/chatgpt/health', requireChatgptActionAuth, (req, res) => {
+  res.json({ ok: true });
+});
+
+app.get('/chatgpt/openapi.json', (req, res) => {
+  res.sendFile(join(__dirnameBridge, 'public', 'chatgpt-actions.openapi.json'));
+});
+
+app.get('/chatgpt/usage/codex', requireChatgptActionAuth, async (req, res) => {
+  try {
+    const month = typeof req.query.month === 'string' ? req.query.month : undefined;
+    const summary = await getCodexUsageSummary(month);
+    return res.json(summary);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message || 'Failed to load codex usage summary' });
+  }
+});
+
 if (useMcpTools) {
   app.post('/mcp', requireBridgeAuth, applyRateLimit, async (req, res) => {
     const payload = req.body ?? {};
@@ -430,6 +485,57 @@ app.get('/integrations/housecall/config', requireBridgeAuth, (req, res) => {
 
 app.get('/integrations/gdrive/config', requireBridgeAuth, (req, res) => {
   res.json({ gdrive: gdriveGetConfig() });
+});
+
+app.get('/chatgpt/gdrive/config', requireChatgptActionAuth, (req, res) => {
+  res.json({ gdrive: gdriveGetConfig() });
+});
+
+app.get('/integrations/gdrive/files', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  try {
+    const result = await gdriveListFiles({
+      q: req.query.q,
+      page_size: req.query.page_size ? Number(req.query.page_size) : undefined,
+      page_token: req.query.page_token,
+      folder_id: req.query.folder_id,
+      shared_drive_id: req.query.shared_drive_id,
+      order_by: req.query.order_by,
+      fields: req.query.fields,
+    });
+    return res.json(result);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message || 'Google Drive list failed' });
+  }
+});
+
+app.post('/integrations/gdrive/upload', requireBridgeAuth, applyRateLimit, validateBody(gdriveUploadBodySchema), async (req, res) => {
+  try {
+    const result = await gdriveUploadFile({
+      name: req.body.name,
+      content_base64: req.body.content_base64,
+      mime_type: req.body.mime_type,
+      folder_id: req.body.folder_id,
+      shared_drive_id: req.body.shared_drive_id,
+    });
+    return res.json(result);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message || 'Google Drive upload failed' });
+  }
+});
+
+app.get('/integrations/gdrive/download/:fileId', requireBridgeAuth, applyRateLimit, async (req, res) => {
+  try {
+    const result = await gdriveDownloadFile({
+      file_id: req.params.fileId,
+      shared_drive_id: req.query.shared_drive_id,
+    });
+    return res.json(result);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message || 'Google Drive download failed' });
+  }
 });
 
 app.post('/integrations/housecall/test', requireBridgeAuth, applyRateLimit, async (req, res) => {
@@ -989,14 +1095,16 @@ app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, valid
   }
 });
 
-app.post('/chat', requireBridgeAuth, applyRateLimit, validateBody(chatBodySchema), async (req, res) => {
-  const userId = req.body.user_id ?? req.headers['x-user-id'];
-  const message = req.body.message ?? req.body.text ?? '';
-  const asyncMode = req.query.async === 'true' || req.body.async === true;
+async function handleChatRequest(req, res, options = {}) {
+  const userId = options.userId ?? req.body.user_id ?? req.headers['x-user-id'];
+  const message = options.message ?? req.body.message ?? req.body.text ?? '';
+  const asyncMode = options.asyncMode ?? (req.query.async === 'true' || req.body.async === true);
+  const statusBasePath = options.statusBasePath || '/jobs';
+  const orchestratorContext = options.orchestratorContext || { userId };
 
   if (asyncMode) {
     const jobId = await createJob({ user_id: userId });
-    const statusUrl = `${baseUrl}/jobs/${jobId}`;
+    const statusUrl = `${baseUrl}${statusBasePath}/${jobId}`;
 
     setImmediate(async () => {
       try {
@@ -1005,7 +1113,7 @@ app.post('/chat', requireBridgeAuth, applyRateLimit, validateBody(chatBodySchema
         await updateJob(jobId, { agent_id: agentId });
         const { state, lastContent } = await waitForCompletion(agentId);
         if (state === 'completed' || state === 'failed' || state === 'stopped') {
-          const orchestrator = await dispatchOrchestratorCommands(lastContent, { userId });
+          const orchestrator = await dispatchOrchestratorCommands(lastContent, orchestratorContext);
           await updateJob(jobId, {
             status: state === 'completed' ? 'completed' : 'failed',
             result: {
@@ -1045,7 +1153,7 @@ app.post('/chat', requireBridgeAuth, applyRateLimit, validateBody(chatBodySchema
     const { agentId } = await sendToAgent(userId, message);
     const { state, lastContent } = await waitForCompletion(agentId);
     if (state === 'completed' || state === 'failed' || state === 'stopped') {
-      const orchestrator = await dispatchOrchestratorCommands(lastContent, { userId });
+      const orchestrator = await dispatchOrchestratorCommands(lastContent, orchestratorContext);
       req.agentId = agentId;
       return res.json({
         reply: lastContent,
@@ -1061,6 +1169,33 @@ app.post('/chat', requireBridgeAuth, applyRateLimit, validateBody(chatBodySchema
     console.error(err);
     res.status(500).json({ error: err.message });
   }
+}
+
+app.post('/chat', requireBridgeAuth, applyRateLimit, validateBody(chatBodySchema), async (req, res) => {
+  return handleChatRequest(req, res, {
+    userId: req.body.user_id ?? req.headers['x-user-id'],
+    message: req.body.message ?? req.body.text ?? '',
+    asyncMode: req.query.async === 'true' || req.body.async === true,
+    statusBasePath: '/jobs',
+    orchestratorContext: { userId: req.body.user_id ?? req.headers['x-user-id'] },
+  });
+});
+
+app.post('/chatgpt/chat', requireChatgptActionAuth, applyRateLimit, async (req, res) => {
+  const message = `${req.body?.message ?? req.body?.text ?? ''}`.trim();
+  if (!message) {
+    return res.status(400).json({ error: 'message is required' });
+  }
+  const sessionId = `${req.body?.session_id ?? req.body?.user_id ?? req.headers['x-openai-conversation-id'] ?? 'default'}`.trim();
+  const userId = `chatgpt:${sessionId}`;
+  const asyncMode = req.query.async === 'true' || req.body?.async === true;
+  return handleChatRequest(req, res, {
+    userId,
+    message,
+    asyncMode,
+    statusBasePath: '/chatgpt/jobs',
+    orchestratorContext: { userId },
+  });
 });
 
 app.get('/agent/:userId', requireBridgeAuth, async (req, res) => {
@@ -1072,6 +1207,22 @@ app.get('/jobs/:id', requireBridgeAuth, async (req, res) => {
   const job = await getJob(req.params.id);
   if (!job) return res.status(404).json({ error: 'Job not found' });
   const statusUrl = `${baseUrl}/jobs/${job.id}`;
+  return res.json({
+    job_id: job.id,
+    agent_id: job.agent_id,
+    user_id: job.user_id,
+    status: job.status,
+    result: job.result,
+    error: job.error,
+    created_at: job.created_at,
+    status_url: statusUrl,
+  });
+});
+
+app.get('/chatgpt/jobs/:id', requireChatgptActionAuth, async (req, res) => {
+  const job = await getJob(req.params.id);
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+  const statusUrl = `${baseUrl}/chatgpt/jobs/${job.id}`;
   return res.json({
     job_id: job.id,
     agent_id: job.agent_id,
