@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildEstimate } from '../estimator-engine.js';
+import { buildEstimate, renderEstimateHtml } from '../estimator-engine.js';
 
 test('buildEstimate computes totals from catalog selection', () => {
   const estimate = buildEstimate({
@@ -136,4 +136,42 @@ test('buildEstimate rejects unknown SKU', () => {
       }),
     /Unknown SKU/,
   );
+});
+
+test('renderEstimateHtml uses branded professional proposal template', () => {
+  const estimate = buildEstimate({
+    config: {
+      currency: 'USD',
+      laborRatePerHour: 100,
+      laborBurdenRate: 0.3,
+      overheadRate: 0.2,
+      contingencyRate: 0,
+      targetGrossMargin: 0.5,
+      defaultTaxRate: 0.07,
+      defaultPermitFee: 0,
+      defaultTripCharge: 0,
+      estimateExpirationDays: 30,
+      paymentTerms: 'Due on completion',
+    },
+    catalog: [
+      {
+        sku: 'MS-24K-TEST',
+        name: '24k Ductless Mini Split',
+        itemType: 'equipment',
+        unitCost: 2400,
+        defaultLaborHours: 2,
+        taxable: true,
+        features: [],
+      },
+    ],
+    selections: [{ sku: 'MS-24K-TEST', quantity: 1 }],
+    customer: { name: 'Jonathan Salazar' },
+    project: { summary: '24,000 BTU mini-split replacement' },
+  });
+
+  const html = renderEstimateHtml(estimate);
+  assert.equal(html.includes('HVAC Replacement Proposal'), true);
+  assert.equal(html.includes('/assets/branding/polar-air-logo.jpg'), true);
+  assert.equal(html.includes("What's Included"), true);
+  assert.equal(html.includes('System Options'), true);
 });

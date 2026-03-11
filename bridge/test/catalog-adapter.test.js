@@ -38,3 +38,15 @@ test('catalog adapter output can be estimated using buildEstimate', () => {
   assert.equal(Array.isArray(estimate?.line_items), true);
   assert.equal(estimate.line_items.length >= 1, true);
 });
+
+test('catalog adapter enriches mini-split features when matching model families', () => {
+  const catalog = loadIngestedEstimatorCatalog('preferred');
+  const miniSplitItem = catalog.find(
+    (item) =>
+      item.itemType === 'equipment' &&
+      /mini split|mini-split|ductless|mwal-|mhpc-|mduc-|m4c5-/i.test(`${item.name} ${item.code || ''}`),
+  );
+  if (!miniSplitItem) return;
+  assert.equal(Array.isArray(miniSplitItem.features), true);
+  assert.equal(miniSplitItem.features.length > 0, true);
+});

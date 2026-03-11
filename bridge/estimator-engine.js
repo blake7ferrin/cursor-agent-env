@@ -4,6 +4,7 @@ import {
   getDefaultEstimatorConfig,
   normalizeRate,
 } from './estimator-domain.js';
+import { getBrandingProfile } from './branding/polar-air.js';
 
 function roundMoney(value) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
@@ -149,6 +150,59 @@ function formatMoney(value, currency) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function formatDate(isoOrText) {
+  if (!isoOrText) return '';
+  const parsed = new Date(isoOrText);
+  if (Number.isNaN(parsed.getTime())) return String(isoOrText);
+  return parsed.toLocaleDateString('en-US', {
+    month: 'long',
+    day: '2-digit',
+    year: 'numeric',
+  });
+}
+
+function listItemsToHtml(items = []) {
+  return (Array.isArray(items) ? items : [])
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join('');
+}
+
+function estimateOptionsToHtml(estimate) {
+  const taxRate = Number(estimate?.totals?.taxRate || 0);
+  const rows = (Array.isArray(estimate?.line_items) ? estimate.line_items : [])
+    .map((line, index) => {
+      const subtotal = Number(line?.costs?.targetSellPrice || 0);
+      const tax = line?.taxable ? subtotal * taxRate : 0;
+      const total = subtotal + tax;
+      const optionName = String.fromCharCode(65 + (index % 26));
+      const features = Array.isArray(line?.features) && line.features.length
+        ? `<div class="features">${escapeHtml(line.features.join(' | '))}</div>`
+        : '';
+      return `
+        <tr>
+          <td class="option">${optionName}</td>
+          <td>${escapeHtml(line?.name || '')}${features}</td>
+          <td>${escapeHtml(line?.code || '')}</td>
+          <td>${escapeHtml(line?.itemType || 'service')}</td>
+          <td class="right">${formatMoney(subtotal, estimate.currency)}</td>
+          <td class="right">${formatMoney(total, estimate.currency)}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  return rows || `
+    <tr>
+      <td class="option">A</td>
+      <td>No options found</td>
+      <td>-</td>
+      <td>-</td>
+      <td class="right">${formatMoney(0, estimate.currency)}</td>
+      <td class="right">${formatMoney(0, estimate.currency)}</td>
+    </tr>
+  `;
 }
 
 export function buildEstimate(input = {}) {
@@ -363,73 +417,252 @@ export function buildEstimate(input = {}) {
 }
 
 export function renderEstimateHtml(estimate) {
-  const lines = estimate.line_items
-    .map((line) => {
-      const features = line.features?.length ? `<div>${escapeHtml(line.features.join(' | '))}</div>` : '';
-      return `
-        <tr>
-          <td>${escapeHtml(line.code)}</td>
-          <td>
-            <strong>${escapeHtml(line.name)}</strong>
-            ${features}
-          </td>
-          <td>${line.quantity}</td>
-          <td style="text-align:right">${formatMoney(line.costs.totalCost, estimate.currency)}</td>
-          <td style="text-align:right">${formatMoney(line.costs.targetSellPrice, estimate.currency)}</td>
-        </tr>
-      `;
-    })
-    .join('\n');
-
-  const customerName = escapeHtml(estimate.customer?.name || 'Customer');
-  const projectSummary = escapeHtml(estimate.project?.summary || 'HVAC service estimate');
+  const brand = getBrandingProfile();
+  const customerName = escapeHtml(estimate?.customer?.name || estimate?.customer?.customer_name || 'Customer');
+  const propertyAddress = escapeHtml(
+    estimate?.project?.address || estimate?.customer?.address || estimate?.project?.property_address || 'Not provided',
+  );
+  const phone = escapeHtml(estimate?.customer?.phone || estimate?.customer?.phone_number || 'Not provided');
+  const email = escapeHtml(estimate?.customer?.email || 'Not provided');
+  const issueDate = escapeHtml(formatDate(estimate?.generated_at));
+  const expiresDate = escapeHtml(formatDate(estimate?.expires_at));
+  const preparedBy = escapeHtml(estimate?.project?.prepared_by || brand.companyName);
+  const scopeSummary = escapeHtml(estimate?.project?.summary || brand.defaultScopeSummary);
+  const proposalId = escapeHtml(estimate?.project?.proposal_id || estimate?.estimate_id || '');
+  const includeProposalId = proposalId && !proposalId.startsWith('est_');
+  const optionsRows = estimateOptionsToHtml(estimate);
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Estimate ${escapeHtml(estimate.estimate_id)}</title>
+  <title>${escapeHtml(brand.proposalTitle)} - ${escapeHtml(estimate?.estimate_id || '')}</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 24px; color: #111; }
-    h1, h2, h3 { margin-bottom: 8px; }
-    .muted { color: #666; font-size: 12px; }
-    .totals { margin-top: 20px; width: 320px; margin-left: auto; border-collapse: collapse; }
-    .totals td { padding: 6px 8px; border-top: 1px solid #ddd; }
-    .line-items { width: 100%; border-collapse: collapse; margin-top: 16px; }
-    .line-items th, .line-items td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
-    .line-items th { background: #f8f8f8; text-align: left; }
+    :root {
+      --ink: #111827;
+      --muted: #6b7280;
+      --line: #d1d5db;
+      --panel: #f3f4f6;
+      --brand: #0f172a;
+      --accent: #1f2937;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.4;
+      background: #fff;
+    }
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+    }
+    .logo-wrap img {
+      height: 72px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+    .title h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: 0.01em;
+      color: var(--brand);
+      line-height: 1.1;
+    }
+    .title .meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+    .section {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      break-inside: avoid;
+    }
+    .section h2 {
+      margin: 0;
+      padding: 8px 10px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .kv {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .kv td {
+      border-top: 1px solid var(--line);
+      padding: 7px 9px;
+      vertical-align: top;
+    }
+    .kv td:first-child {
+      width: 200px;
+      font-weight: 700;
+      background: #f9fafb;
+    }
+    .copy {
+      padding: 10px;
+      font-size: 13px;
+    }
+    .copy p {
+      margin: 0 0 8px 0;
+    }
+    .options {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.8px;
+    }
+    .options th, .options td {
+      border: 1px solid var(--line);
+      padding: 7px 8px;
+      vertical-align: top;
+    }
+    .options th {
+      text-align: left;
+      background: var(--panel);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .options td.option {
+      width: 42px;
+      text-align: center;
+      font-weight: 800;
+    }
+    .options td.right {
+      text-align: right;
+      white-space: nowrap;
+    }
+    .features {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11.5px;
+    }
+    ul {
+      margin: 8px 0 8px 18px;
+      padding: 0 0 0 4px;
+    }
+    li {
+      margin: 3px 0;
+    }
+    .footer {
+      margin-top: 14px;
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    @media print {
+      .page { max-width: none; padding: 12px; }
+    }
   </style>
 </head>
 <body>
-  <h1>HVAC Estimate</h1>
-  <div class="muted">Estimate ID: ${escapeHtml(estimate.estimate_id)}</div>
-  <div class="muted">Generated: ${escapeHtml(estimate.generated_at)}</div>
-  <div class="muted">Expires: ${escapeHtml(estimate.expires_at)}</div>
-  <h3>Customer</h3>
-  <div>${customerName}</div>
-  <h3>Project</h3>
-  <div>${projectSummary}</div>
-  <table class="line-items">
-    <thead>
-      <tr>
-        <th>Code</th>
-        <th>Description</th>
-        <th>Qty</th>
-        <th style="text-align:right">Cost</th>
-        <th style="text-align:right">Price</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${lines}
-    </tbody>
-  </table>
-  <table class="totals">
-    <tr><td>Subtotal</td><td style="text-align:right">${formatMoney(estimate.totals.subtotalAfterDiscount, estimate.currency)}</td></tr>
-    <tr><td>Tax</td><td style="text-align:right">${formatMoney(estimate.totals.taxTotal, estimate.currency)}</td></tr>
-    <tr><td><strong>Total</strong></td><td style="text-align:right"><strong>${formatMoney(estimate.totals.grandTotal, estimate.currency)}</strong></td></tr>
-  </table>
-  <p><strong>Payment terms:</strong> ${escapeHtml(estimate.assumptions.paymentTerms)}</p>
+  <div class="page">
+    <header class="header">
+      <div class="logo-wrap">
+        <img src="${escapeHtml(brand.logoPath)}" alt="${escapeHtml(brand.companyName)} logo" />
+      </div>
+      <div class="title">
+        <h1>${escapeHtml(brand.proposalTitle)}</h1>
+        <div class="meta">${escapeHtml(brand.companyName)} • ${escapeHtml(brand.license)} • ${escapeHtml(brand.phone)}</div>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>Customer Information</h2>
+      <table class="kv">
+        <tr><td>Client</td><td>${customerName}</td></tr>
+        <tr><td>Property</td><td>${propertyAddress}</td></tr>
+        <tr><td>Phone</td><td>${phone}</td></tr>
+        <tr><td>Email</td><td>${email}</td></tr>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Estimate Details</h2>
+      <table class="kv">
+        <tr><td>Date</td><td>${issueDate}</td></tr>
+        <tr><td>Prepared By</td><td>${preparedBy}</td></tr>
+        <tr><td>Scope</td><td>${scopeSummary}</td></tr>
+        ${includeProposalId ? `<tr><td>Proposal ID</td><td>${proposalId}</td></tr>` : ''}
+        <tr><td>Estimate Valid Through</td><td>${expiresDate}</td></tr>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Project Scope</h2>
+      <div class="copy">
+        <p>${scopeSummary}</p>
+        <p><strong>Manufacturer's Warranty:</strong> ${escapeHtml(brand.warrantyBlurb)}</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>System Options</h2>
+      <table class="options">
+        <thead>
+          <tr>
+            <th>Option</th>
+            <th>Description</th>
+            <th>Model / Code</th>
+            <th>Type</th>
+            <th style="text-align:right">Price</th>
+            <th style="text-align:right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${optionsRows}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Installation Details</h2>
+      <div class="copy">
+        <p><strong>What's Included:</strong></p>
+        <ul>${listItemsToHtml(brand.includedItems)}</ul>
+        <p><strong>What's Not Included:</strong></p>
+        <ul>${listItemsToHtml(brand.excludedItems)}</ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Next Steps</h2>
+      <div class="copy">
+        <p>${escapeHtml(brand.nextSteps)}</p>
+        <p>${escapeHtml(brand.legalDisclaimer)}</p>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div>${escapeHtml(brand.companyName)} | ${escapeHtml(brand.license)} | ${escapeHtml(brand.phone)}</div>
+      <div>Estimate ${escapeHtml(estimate?.estimate_id || '')}</div>
+    </footer>
+  </div>
 </body>
 </html>`;
 }

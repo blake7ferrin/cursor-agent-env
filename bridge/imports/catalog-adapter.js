@@ -9,6 +9,7 @@ const IMPORTS_ROOT = path.join(BRIDGE_ROOT, 'imports');
 const CATALOG_JSON_PATH = path.join(IMPORTS_ROOT, 'catalog', 'equipment-and-adders.json');
 const REPORT_JSON_PATH = path.join(IMPORTS_ROOT, 'validation-report.json');
 const PROFILES_JSON_PATH = path.join(IMPORTS_ROOT, 'source-profiles.json');
+const FEATURE_ENRICHMENT_JSON_PATH = path.join(IMPORTS_ROOT, 'catalog-feature-enrichment.json');
 
 function normalizeText(value) {
   if (value === undefined || value === null) return '';
@@ -103,6 +104,37 @@ function buildSku(row) {
   return `ING-${stableHash(signature)}`;
 }
 
+function readJsonSafe(filePath, fallbackValue) {
+  try {
+    if (!fs.existsSync(filePath)) return fallbackValue;
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (_) {
+    return fallbackValue;
+  }
+}
+
+function featureMatchesRule(row = {}, rule = {}) {
+  const tokens = Array.isArray(rule.match) ? rule.match : [];
+  if (!tokens.length) return false;
+  const blob = `${normalizeText(row.name)} ${normalizeText(row.description)} ${normalizeText(row.subcategory_1)}`.toLowerCase();
+  return tokens.some((token) => blob.includes(normalizeLower(token)));
+}
+
+function getEnrichedFeatures(row = {}) {
+  const store = readJsonSafe(FEATURE_ENRICHMENT_JSON_PATH, { rules: [] });
+  const rules = Array.isArray(store?.rules) ? store.rules : [];
+  const features = [];
+  for (const rule of rules) {
+    if (!featureMatchesRule(row, rule)) continue;
+    for (const feature of Array.isArray(rule.features) ? rule.features : []) {
+      const normalized = normalizeText(feature);
+      if (!normalized) continue;
+      features.push(normalized);
+    }
+  }
+  return Array.from(new Set(features));
+}
+
 function toEstimatorCatalogItem(row, profileName = 'preferred') {
   const itemType = inferItemType(row);
   const unitCost = parseNumber(row.cost);
@@ -114,6 +146,7 @@ function toEstimatorCatalogItem(row, profileName = 'preferred') {
   const phase = inferPhase(row);
   const seer2 = inferSeer2(row);
   const vendorQuoteRequired = itemType === 'equipment' && brand && !['ac pro', 'day & night'].includes(brand.toLowerCase());
+  const features = getEnrichedFeatures(row);
 
   return {
     sku: buildSku(row),
@@ -122,7 +155,7 @@ function toEstimatorCatalogItem(row, profileName = 'preferred') {
     unitCost,
     defaultLaborHours: 0,
     taxable: asBoolean(row.taxable, itemType === 'equipment'),
-    features: [],
+    features,
     notes: normalizeText(row.description),
     attributes: {
       brand,
@@ -137,15 +170,6 @@ function toEstimatorCatalogItem(row, profileName = 'preferred') {
       importProfile: profileName,
     },
   };
-}
-
-function readJsonSafe(filePath, fallbackValue) {
-  try {
-    if (!fs.existsSync(filePath)) return fallbackValue;
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch (_) {
-    return fallbackValue;
-  }
 }
 
 function getProfileIncludeFiles(profileName) {

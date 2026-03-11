@@ -1,0 +1,52 @@
+{
+  "rules": [
+    {
+      "match": ["MHPC-J-"],
+      "features": [
+        "Inverter-driven variable-speed compressor",
+        "Internal overload protection",
+        "Crankcase heater",
+        "Optional Wi-Fi adapter"
+      ]
+    },
+    {
+      "match": ["MWAL-J-"],
+      "features": [
+        "Wall-mounted indoor unit",
+        "IR remote control included",
+        "Quiet operation profile"
+      ]
+    },
+    {
+      "match": ["MHPC-H-"],
+      "features": [
+        "Ultra-high efficiency H-series platform",
+        "Low ambient heating performance down to -13°F",
+        "Inverter compressor control"
+      ]
+    },
+    {
+      "match": ["M4C5-H-"],
+      "features": [
+        "4-way ceiling cassette air distribution",
+        "Flush-mount ceiling design",
+        "Optional Wi-Fi control"
+      ]
+    },
+    {
+      "match": ["MDUC-H-"],
+      "features": [
+        "Concealed ducted indoor unit",
+        "Ultra-quiet operation profile",
+        "Built-in drain pump"
+      ]
+    },
+    {
+      "match": ["mini split", "mini-split", "ductless"],
+      "features": [
+        "R-454B (A2L) low-GWP refrigerant platform",
+        "Single-zone mini-split system architecture"
+      ]
+    }
+  ]
+}
