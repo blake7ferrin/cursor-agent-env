@@ -35,6 +35,7 @@ Secrets are not always available from the environment (e.g. in CI or when the br
    - `REDIS_URL` — optional Redis for persistent agent mapping, rate limiting, **async job state**, and **idempotency cache**. When unset, in-memory (and file for agent mapping) fallbacks are used.
    - `BRIDGE_CODEX_SESSION_TTL_SECONDS` — optional TTL for persisted codex sessions (default 604800 / 7 days).
    - `TELEGRAM_BOT_TOKEN` — optional; from [@BotFather](https://t.me/BotFather) if you want Telegram.
+   - `TELEGRAM_POLLING_ENABLED` — optional; set `false`/`0`/`no` to disable Telegram polling even when `TELEGRAM_BOT_TOKEN` is set (helps avoid 409 polling conflicts on multi-instance deploys).
    - `DISABLE_HOUSECALL_REQUEST` — set to `true` or `1` to disable `POST /integrations/housecall/request` (e.g. in production).
    - `ENABLE_HOUSECALL_DEBUG_REQUEST` — set to `true` or `1` to **allow** the debug proxy `POST /integrations/housecall/request`. When unset (or `false`), the endpoint returns 403. Use with `DISABLE_HOUSECALL_REQUEST` unset.
    - `USE_MCP_TOOLS` — set to `true` or `1` to enable **GET /mcp/tools**, **POST /mcp/call**, and **POST /mcp** (JSON-RPC) for MCP-style tool discovery and invocation. When unset, these routes are not registered.
