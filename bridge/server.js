@@ -20,6 +20,7 @@ import { buildChangeoutPlan } from './estimator-changeout.js';
 import { buildEstimate, renderEstimateHtml } from './estimator-engine.js';
 import { EstimatorValidationError } from './estimator-domain.js';
 import { applyInstallerPieceRatePricing } from './installer-pricing.js';
+import { buildNewBuildEstimateInput, resolveEstimateMode } from './estimator-new-build.js';
 import {
   buildHousecallAppointmentLookupRequest,
   buildHousecallUpsertPlan,
@@ -182,6 +183,65 @@ function resolveLaborContext(body = {}) {
   if (body?.project?.labor_context && typeof body.project.labor_context === 'object') return body.project.labor_context;
   if (body?.project?.laborContext && typeof body.project.laborContext === 'object') return body.project.laborContext;
   return {};
+}
+
+function buildEstimateInputForRequest({ body = {}, runtimeProfile }) {
+  const mode = resolveEstimateMode(body);
+  if (mode.estimateType === 'new_build') {
+    const built = buildNewBuildEstimateInput({
+      body,
+      profile: runtimeProfile,
+    });
+    const estimate = buildEstimate({
+      config: runtimeProfile.config,
+      catalog: runtimeProfile.catalog,
+      selections: built.selections,
+      manual_items: built.manual_items,
+      customer: built.customer,
+      project: built.project,
+      adjustments: built.adjustments,
+    });
+    estimate.estimate_type = 'new_build';
+    estimate.pricing_mode = built.pricingMode;
+    estimate.new_build = built.new_build;
+    estimate.project = {
+      ...(estimate.project || {}),
+      estimateType: 'new_build',
+      pricing_mode: built.pricingMode,
+    };
+    return {
+      mode,
+      estimate,
+      installerPricing: {
+        enabled: false,
+        skippedReason: 'estimate_type_new_build',
+        appliedItems: [],
+      },
+    };
+  }
+
+  const installerPricing = applyInstallerPieceRatePricing({
+    selections: body?.selections,
+    manualItems: body?.manual_items,
+    catalog: runtimeProfile.catalog,
+    laborContext: resolveLaborContext(body),
+  });
+  const estimate = buildEstimate({
+    config: runtimeProfile.config,
+    catalog: runtimeProfile.catalog,
+    selections: body?.selections,
+    manual_items: installerPricing.manualItems,
+    customer: body?.customer,
+    project: body?.project,
+    adjustments: body?.adjustments,
+  });
+  estimate.estimate_type = mode.estimateType;
+  estimate.pricing_mode = mode.pricingMode;
+  return {
+    mode,
+    estimate,
+    installerPricing,
+  };
 }
 
 function mergeHousecallContext(primary = {}, fallback = {}) {
@@ -784,6 +844,12 @@ app.post('/estimator/changeout-plan', requireBridgeAuth, applyRateLimit, validat
   if (!userId) {
     return res.status(400).json({ error: 'Missing user_id' });
   }
+  const mode = resolveEstimateMode(req.body);
+  if (mode.estimateType === 'new_build') {
+    return res.status(400).json({
+      error: 'new_build estimateType is not supported on /estimator/changeout-plan. Use /estimator/estimate.',
+    });
+  }
   try {
     const profile = await getEstimatorProfile(userId);
     const { runtimeProfile: planProfile, catalogRuntime: importedCatalogMeta } = await resolveRuntimeEstimatorProfile(
@@ -816,20 +882,13 @@ app.post('/estimator/estimate', requireBridgeAuth, applyRateLimit, validateBody(
   try {
     const profile = await getEstimatorProfile(userId);
     const { runtimeProfile, catalogRuntime } = await resolveRuntimeEstimatorProfile(profile, req.body);
-    const installerPricing = applyInstallerPieceRatePricing({
-      selections: req.body?.selections,
-      manualItems: req.body?.manual_items,
-      catalog: runtimeProfile.catalog,
-      laborContext: resolveLaborContext(req.body),
-    });
-    const estimate = buildEstimate({
-      config: runtimeProfile.config,
-      catalog: runtimeProfile.catalog,
-      selections: req.body?.selections,
-      manual_items: installerPricing.manualItems,
-      customer: req.body?.customer,
-      project: req.body?.project,
-      adjustments: req.body?.adjustments,
+    const {
+      mode,
+      estimate,
+      installerPricing,
+    } = buildEstimateInputForRequest({
+      body: req.body,
+      runtimeProfile,
     });
     const output = req.body?.output === 'html' ? 'html' : 'json';
     const html = renderEstimateHtml(estimate);
@@ -841,6 +900,7 @@ app.post('/estimator/estimate', requireBridgeAuth, applyRateLimit, validateBody(
       printable_html: html,
       catalog_runtime: catalogRuntime,
       installer_pricing: installerPricing,
+      estimate_mode: mode,
     });
   } catch (err) {
     return handleEstimatorError(err, res);
@@ -870,21 +930,12 @@ app.post('/estimator/export/housecall', requireBridgeAuth, applyRateLimit, valid
       const profile = await getEstimatorProfile(userId);
       const runtime = await resolveRuntimeEstimatorProfile(profile, req.body);
       catalogRuntime = runtime.catalogRuntime;
-      installerPricing = applyInstallerPieceRatePricing({
-        selections: req.body?.selections,
-        manualItems: req.body?.manual_items,
-        catalog: runtime.runtimeProfile.catalog,
-        laborContext: resolveLaborContext(req.body),
+      const built = buildEstimateInputForRequest({
+        body: req.body,
+        runtimeProfile: runtime.runtimeProfile,
       });
-      estimate = buildEstimate({
-        config: runtime.runtimeProfile.config,
-        catalog: runtime.runtimeProfile.catalog,
-        selections: req.body?.selections,
-        manual_items: installerPricing.manualItems,
-        customer: req.body?.customer,
-        project: req.body?.project,
-        adjustments: req.body?.adjustments,
-      });
+      installerPricing = built.installerPricing;
+      estimate = built.estimate;
     }
 
     const housecallOpts = req.body?.housecall && typeof req.body.housecall === 'object' ? req.body.housecall : {};

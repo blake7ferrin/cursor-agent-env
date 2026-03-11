@@ -175,3 +175,56 @@ test('renderEstimateHtml uses branded professional proposal template', () => {
   assert.equal(html.includes("What's Included"), true);
   assert.equal(html.includes('System Options'), true);
 });
+
+test('renderEstimateHtml shows new-build breakdown when metadata exists', () => {
+  const estimate = buildEstimate({
+    config: {
+      currency: 'USD',
+      laborRatePerHour: 100,
+      laborBurdenRate: 0.2,
+      overheadRate: 0.15,
+      contingencyRate: 0,
+      targetGrossMargin: 0.45,
+      defaultTaxRate: 0.08,
+      defaultPermitFee: 0,
+      defaultTripCharge: 0,
+      estimateExpirationDays: 30,
+      paymentTerms: 'Due on completion',
+    },
+    catalog: [],
+    manual_items: [
+      {
+        code: 'NB-OVERRIDE-JOB-SUBTOTAL',
+        name: 'Manual override - new build job cost subtotal',
+        quantity: 1,
+        unitCost: 12000,
+        laborHoursPerUnit: 0,
+        itemType: 'service',
+        taxable: false,
+      },
+    ],
+    project: {
+      summary: 'New build package',
+      estimateType: 'new_build',
+      pricing_mode: 'standard',
+    },
+  });
+  estimate.estimate_type = 'new_build';
+  estimate.pricing_mode = 'standard';
+  estimate.new_build = {
+    pricingMode: 'standard',
+    systems: [{ systemId: 'SYS-1', equipmentType: 'split', tonnage: 3, heatType: 'gas' }],
+    sectionInputSubtotals: {
+      equipment: 8000,
+      airDistribution: 2200,
+      ventilation: 900,
+      adders: 900,
+      jobCostSubtotal: 12000,
+    },
+  };
+
+  const html = renderEstimateHtml(estimate);
+  assert.equal(html.includes('New Build Breakdown'), true);
+  assert.equal(html.includes('Equipment Subtotal'), true);
+  assert.equal(html.includes('Pricing Mode'), true);
+});

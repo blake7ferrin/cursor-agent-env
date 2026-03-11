@@ -28,6 +28,7 @@ Durable facts, preferences, and decisions. The agent updates this file when the 
 - User is exploring an HVAC estimator agent that can use full cost inputs (parts/equipment pricing, labor, overhead, profit targets), ingest photos/chat context, and produce CRM estimates or generated estimate PDFs, potentially replacing a traditional static pricebook.
 - User wants to evolve this repo toward an MCP-first "AI agent control center" architecture (remote chat/control via PWA + Telegram + tool servers), while keeping Housecall/pricebook workflows central.
 - Estimator MVP now exists in `bridge/` (2026-02-25): per-user pricing config + catalog storage, deterministic estimate calculation endpoint, printable HTML output for PDF workflows, and a new `.cursor/skills/hvac-estimator` skill for estimator operation.
+- Estimator now supports two estimate types (2026-03-11): existing `changeout` and new modular `new_build` mode (`budget|standard|detailed`) with sectioned subtotals (equipment, air distribution, ventilation, adders) and shared final pricing formula.
 - User CRM is **Housecall Pro**; estimator workflows should prioritize direct Housecall export over generic CRM assumptions.
 - Housecall workflow must support both updating existing scheduled estimates and adding new estimate options to existing jobs (not just creating brand-new estimates).
 - Housecall export now supports auto-upsert target routing (estimate -> appointment context -> job -> create fallback) to reduce tech decision-making in the field.

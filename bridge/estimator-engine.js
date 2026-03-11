@@ -169,6 +169,47 @@ function listItemsToHtml(items = []) {
     .join('');
 }
 
+function formatNumber(value, decimals = 0) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return '0';
+  return numeric.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+function newBuildSummaryToHtml(estimate) {
+  const summary = estimate?.new_build;
+  if (!summary || typeof summary !== 'object') return '';
+  const subtotals = summary.sectionInputSubtotals || {};
+  const systems = Array.isArray(summary.systems) ? summary.systems : [];
+  const systemsHtml = systems.length
+    ? systems
+      .map((system) => `<li>${escapeHtml(system.systemId || 'System')} — ${escapeHtml(system.equipmentType || 'system')} (${formatNumber(system.tonnage, 1)} ton, ${escapeHtml(system.heatType || 'electric')})</li>`)
+      .join('')
+    : '<li>System details not provided</li>';
+
+  return `
+    <section class="section">
+      <h2>New Build Breakdown</h2>
+      <table class="kv">
+        <tr><td>Estimate Type</td><td>New Build</td></tr>
+        <tr><td>Pricing Mode</td><td>${escapeHtml(summary.pricingMode || estimate?.pricing_mode || 'standard')}</td></tr>
+        <tr><td>Equipment Subtotal</td><td>${formatMoney(Number(subtotals.equipment || 0), estimate.currency)}</td></tr>
+        <tr><td>Air Distribution Subtotal</td><td>${formatMoney(Number(subtotals.airDistribution || 0), estimate.currency)}</td></tr>
+        <tr><td>Ventilation Subtotal</td><td>${formatMoney(Number(subtotals.ventilation || 0), estimate.currency)}</td></tr>
+        <tr><td>Adders Subtotal</td><td>${formatMoney(Number(subtotals.adders || 0), estimate.currency)}</td></tr>
+        <tr><td>Cost Subtotal</td><td>${formatMoney(Number(subtotals.jobCostSubtotal || 0), estimate.currency)}</td></tr>
+        <tr><td>Final Selling Price</td><td>${formatMoney(Number(estimate?.totals?.grandTotal || 0), estimate.currency)}</td></tr>
+      </table>
+      <div class="copy">
+        <p><strong>System Summary:</strong></p>
+        <ul>${systemsHtml}</ul>
+      </div>
+    </section>
+  `;
+}
+
 function estimateOptionsToHtml(estimate) {
   const taxRate = Number(estimate?.totals?.taxRate || 0);
   const rows = (Array.isArray(estimate?.line_items) ? estimate.line_items : [])
@@ -418,6 +459,8 @@ export function buildEstimate(input = {}) {
 
 export function renderEstimateHtml(estimate) {
   const brand = getBrandingProfile();
+  const estimateType = escapeHtml(estimate?.estimate_type || estimate?.project?.estimateType || 'changeout');
+  const pricingMode = escapeHtml(estimate?.pricing_mode || estimate?.project?.pricing_mode || 'standard');
   const customerName = escapeHtml(estimate?.customer?.name || estimate?.customer?.customer_name || 'Customer');
   const propertyAddress = escapeHtml(
     estimate?.project?.address || estimate?.customer?.address || estimate?.project?.property_address || 'Not provided',
@@ -431,6 +474,7 @@ export function renderEstimateHtml(estimate) {
   const proposalId = escapeHtml(estimate?.project?.proposal_id || estimate?.estimate_id || '');
   const includeProposalId = proposalId && !proposalId.startsWith('est_');
   const optionsRows = estimateOptionsToHtml(estimate);
+  const newBuildSection = newBuildSummaryToHtml(estimate);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -606,12 +650,15 @@ export function renderEstimateHtml(estimate) {
       <h2>Estimate Details</h2>
       <table class="kv">
         <tr><td>Date</td><td>${issueDate}</td></tr>
+        <tr><td>Estimate Type</td><td>${estimateType}</td></tr>
+        <tr><td>Pricing Mode</td><td>${pricingMode}</td></tr>
         <tr><td>Prepared By</td><td>${preparedBy}</td></tr>
         <tr><td>Scope</td><td>${scopeSummary}</td></tr>
         ${includeProposalId ? `<tr><td>Proposal ID</td><td>${proposalId}</td></tr>` : ''}
         <tr><td>Estimate Valid Through</td><td>${expiresDate}</td></tr>
       </table>
     </section>
+    ${newBuildSection}
 
     <section class="section">
       <h2>Project Scope</h2>

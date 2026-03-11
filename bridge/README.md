@@ -117,6 +117,14 @@ The bot uses long-polling; no webhook or public URL is required.
 - `POST /estimator/estimate` — Generate deterministic estimate totals and printable HTML. Auto-loads ingested `preferred` profile catalog by default (same runtime options as `changeout-plan`). Body: `{ "user_id": "...", "selections": [ ... ], "manual_items": [ ... ], "customer": { ... }, "project": { ... }, "adjustments": { ... }, "output": "json|html" }`. Validated; invalid payloads return `400` with field-level details.
   - Printable estimate output now uses the default Polar Air proposal template (logo + reusable warranty/exclusions/next-steps sections). Template defaults live in `bridge/branding/polar-air.js`, logo asset in `bridge/public/assets/branding/polar-air-logo.jpg`.
   - Catalog feature enrichment overlays for model-family feature bullets live in `bridge/imports/catalog-feature-enrichment.json` and are applied by `bridge/imports/catalog-adapter.js`.
+  - Supports `estimateType`:
+    - `changeout` (existing behavior; default)
+    - `new_build` (new modular calculator)
+  - For `estimateType: "new_build"`, pass `pricing_mode` (`budget|standard|detailed`) and `new_build` payload (`systems`, `airDistribution`, `ventilation`, `adders`, optional `manualOverrides`, optional `pricingTableOverrides`).
+  - `new_build` responses include:
+    - `estimate.estimate_type` and `estimate.pricing_mode`
+    - `estimate.new_build.sectionInputSubtotals` (equipment, air distribution, ventilation, adders, job cost subtotal)
+    - printable HTML block with the new-build breakdown.
 - `POST /estimator/export/housecall` — Build and send estimate to Housecall Pro. Supports dry-run and payload override. **Idempotency:** Send `Idempotency-Key` header or `idempotency_key` in body to avoid duplicate sends; repeated requests with the same key return the stored response with `X-Idempotency-Replay: true`.
 - `GET /integrations/housecall/config` — Returns Housecall auth mode summary (no secrets).
 - `GET /integrations/gdrive/config` — Returns Google Drive auth/config summary (no secrets).

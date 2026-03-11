@@ -54,6 +54,29 @@ test('estimateBodySchema accepts labor_context object', () => {
   assert.equal(result.success, true);
 });
 
+test('estimateBodySchema accepts new_build payload with pricing mode', () => {
+  const result = estimateBodySchema.safeParse({
+    user_id: 'u1',
+    estimateType: 'new_build',
+    pricing_mode: 'budget',
+    new_build: {
+      systems: [{ equipmentType: 'split', tonnage: 3 }],
+      airDistribution: { supplyRegisterCount: 10, returnGrilleCount: 2 },
+    },
+  });
+  assert.equal(result.success, true);
+});
+
+test('estimateBodySchema rejects invalid pricing_mode', () => {
+  const result = estimateBodySchema.safeParse({
+    user_id: 'u1',
+    estimateType: 'new_build',
+    pricing_mode: 'quick',
+    new_build: {},
+  });
+  assert.equal(result.success, false);
+});
+
 test('exportHousecallBodySchema accepts body with user_id and customer', () => {
   const result = exportHousecallBodySchema.safeParse({
     user_id: 'u1',

@@ -121,6 +121,97 @@ test('POST /chat with invalid body returns 400 with details', async () => {
   assert.ok(Array.isArray(res.body?.details));
 });
 
+test('POST /estimator/estimate keeps changeout flow working', async () => {
+  const userId = `changeout-user-${Date.now()}`;
+  await request(app)
+    .put('/estimator/config')
+    .set(auth)
+    .set('Content-Type', 'application/json')
+    .send({ user_id: userId, config: { laborRatePerHour: 100, targetGrossMargin: 0.4 } });
+
+  const res = await request(app)
+    .post('/estimator/estimate')
+    .set(auth)
+    .set('Content-Type', 'application/json')
+    .send({
+      user_id: userId,
+      use_imported_catalog: false,
+      manual_items: [{ name: 'Changeout labor', quantity: 1, unitCost: 1500, taxable: false }],
+      project: { summary: 'Changeout estimate' },
+    });
+  assert.equal(res.status, 200);
+  assert.equal(res.body?.estimate?.estimate_type, 'changeout');
+  assert.equal(res.body?.estimate?.pricing_mode, 'standard');
+  assert.ok(res.body?.estimate?.totals?.grandTotal > 0);
+});
+
+test('POST /estimator/estimate computes new_build totals with mode and breakdown', async () => {
+  const userId = `new-build-user-${Date.now()}`;
+  await request(app)
+    .put('/estimator/config')
+    .set(auth)
+    .set('Content-Type', 'application/json')
+    .send({ user_id: userId, config: { laborRatePerHour: 115, targetGrossMargin: 0.4 } });
+
+  const res = await request(app)
+    .post('/estimator/estimate')
+    .set(auth)
+    .set('Content-Type', 'application/json')
+    .send({
+      user_id: userId,
+      estimateType: 'new_build',
+      pricing_mode: 'standard',
+      use_imported_catalog: false,
+      customer: { name: 'Custom Home Builder' },
+      project: { summary: 'Two system new build' },
+      new_build: {
+        systems: [
+          {
+            systemId: 'SYS-1',
+            equipmentType: 'split',
+            tonnage: 3,
+            lineSetLength: 40,
+            condensateDrainLength: 20,
+            zoneCount: 2,
+          },
+          {
+            systemId: 'SYS-2',
+            equipmentType: 'heat_pump',
+            tonnage: 2.5,
+            lineSetLength: 35,
+            condensateDrainLength: 18,
+            zoneCount: 1,
+          },
+        ],
+        airDistribution: {
+          supplyRegisterCount: 18,
+          returnGrilleCount: 4,
+          returnBoxCount: 4,
+          supplyBootCount: 18,
+          hardDuctLinearFeet: 65,
+          ductTransitionsCount: 6,
+          balancingDamperCount: 8,
+        },
+        ventilation: {
+          bathFanCount: 4,
+          dryerVentCount: 1,
+        },
+        adders: {
+          stories: 2,
+          atticDifficulty: 'difficult',
+          permitRequired: true,
+        },
+      },
+    });
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body?.estimate?.estimate_type, 'new_build');
+  assert.equal(res.body?.estimate?.pricing_mode, 'standard');
+  assert.ok(res.body?.estimate?.new_build?.sectionInputSubtotals?.equipment > 0);
+  assert.ok(res.body?.estimate?.totals?.grandTotal > 0);
+  assert.equal(res.body?.installer_pricing?.enabled, false);
+});
+
 test('POST /estimator/export/housecall idempotency: duplicate key returns 200 with X-Idempotency-Replay', async () => {
   const key = `idem-test-${Date.now()}`;
   const userId = 'idem-user';
