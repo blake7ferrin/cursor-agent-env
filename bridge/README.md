@@ -1,21 +1,29 @@
 # Cursor Agent Bridge
 
-Bridge service that connects Telegram and a simple PWA to the Cursor Cloud Agents API. The agent runs on the **agent-env** repo (this repository); the bridge holds the API key and forwards messages.
+Bridge service that connects Telegram and a simple PWA to an agent provider API. Provider selection is controlled by `AGENT_PROVIDER` (default: `cursor`).
 
 ## Prerequisites
 
 - Node.js 18+
 - [Doppler CLI](https://docs.doppler.com/docs/install-cli) (recommended) or export env vars manually.
-- Cursor API key from [Cursor Dashboard → Integrations](https://cursor.com/dashboard?tab=integrations).
+- One provider credential:
+  - Cursor: API key from [Cursor Dashboard → Integrations](https://cursor.com/dashboard?tab=integrations).
+  - Codex/OpenAI: `OPENAI_API_KEY` for the Responses API.
 
 ## Doppler setup (recommended)
 
-Secrets are not always available from the environment (e.g. in CI or when the bridge is started by another process). Use **Doppler** so the bridge gets `CURSOR_API_KEY`, `BRIDGE_AUTH_TOKEN`, etc. reliably.
+Secrets are not always available from the environment (e.g. in CI or when the bridge is started by another process). Use **Doppler** so the bridge gets provider keys, `BRIDGE_AUTH_TOKEN`, etc. reliably.
 
 1. Install Doppler CLI: `doppler setup` (or see [Install CLI](https://docs.doppler.com/docs/install-cli)).
 2. Create a project (e.g. `cursor-bridge`) and a config (e.g. `dev`).
 3. Add secrets in the Doppler dashboard or via CLI:
-   - `CURSOR_API_KEY` — your Cursor Cloud Agents API key (`key_...`).
+   - `AGENT_PROVIDER` — `cursor` (default) or `codex`.
+   - `CURSOR_API_KEY` — your Cursor Cloud Agents API key (`key_...`) when `AGENT_PROVIDER=cursor`.
+   - `OPENAI_API_KEY` — required when `AGENT_PROVIDER=codex`.
+   - `OPENAI_MODEL` / `OPENAI_MODEL_FULL` — optional full model override for codex provider (default `gpt-5`).
+   - `OPENAI_MODEL_MINI` — optional mini model override (default `gpt-5-mini`).
+   - `OPENAI_MODEL_ROUTING` — `auto` (default), `mini`, or `full`.
+   - `OPENAI_API_BASE` — optional API base override (default `https://api.openai.com`).
    - `AGENT_ENV_REPO` — GitHub URL of this repo (e.g. `https://github.com/your-org/cursor-agent-env`).
    - `AGENT_ENV_REF` — optional; branch or ref for the agent repo (e.g. `cursor/hvac-pricing-agent-3304`). When set, new Telegram/PWA agents use this ref; when unset, the Cursor API uses the repo’s default branch (usually `main`). Use this so the agent has the latest docs/memory without merging to main.
    - `BRIDGE_AUTH_TOKEN` — required token for HTTP clients (`/chat`, `/agent/:userId`). Send as `x-bridge-token` or `Authorization: Bearer ...`.
@@ -25,6 +33,11 @@ Secrets are not always available from the environment (e.g. in CI or when the br
    - `DISABLE_HOUSECALL_REQUEST` — set to `true` or `1` to disable `POST /integrations/housecall/request` (e.g. in production).
    - `ENABLE_HOUSECALL_DEBUG_REQUEST` — set to `true` or `1` to **allow** the debug proxy `POST /integrations/housecall/request`. When unset (or `false`), the endpoint returns 403. Use with `DISABLE_HOUSECALL_REQUEST` unset.
    - `USE_MCP_TOOLS` — set to `true` or `1` to enable **GET /mcp/tools**, **POST /mcp/call**, and **POST /mcp** (JSON-RPC) for MCP-style tool discovery and invocation. When unset, these routes are not registered.
+   - `GDRIVE_SERVICE_ACCOUNT_JSON` — optional full Google service-account JSON (single env var form).
+   - `GDRIVE_CLIENT_EMAIL`, `GDRIVE_PRIVATE_KEY` — optional service-account field form.
+   - `GDRIVE_CLIENT_ID`, `GDRIVE_CLIENT_SECRET`, `GDRIVE_REFRESH_TOKEN` — optional OAuth refresh flow.
+   - `GDRIVE_ACCESS_TOKEN` — optional direct access token mode.
+   - `GDRIVE_FOLDER_ID`, `GDRIVE_SHARED_DRIVE_ID`, `GDRIVE_USE_SHARED_DRIVE`, `GDRIVE_SCOPES` — optional defaults for Drive operations.
    - Housecall/estimator vars as needed — see [docs/DOPPLER.md](../docs/DOPPLER.md).
 4. Run the bridge with Doppler injecting env vars:
    ```bash
@@ -52,7 +65,9 @@ To use the bridge only as a Telegram bot (no PWA/HTTP needed for chat):
 
 1. **Create a bot** in Telegram: open [@BotFather](https://t.me/BotFather), send `/newbot`, follow the prompts, and copy the token (e.g. `7123456789:AAH...`).
 2. **Set env vars** (Doppler or `bridge/.env`):
-   - `CURSOR_API_KEY` — required (from [Cursor Dashboard → Integrations](https://cursor.com/dashboard?tab=integrations)).
+   - `AGENT_PROVIDER` — `cursor` (default) or `codex`.
+   - `CURSOR_API_KEY` — required when `AGENT_PROVIDER=cursor` (from [Cursor Dashboard → Integrations](https://cursor.com/dashboard?tab=integrations)).
+   - `OPENAI_API_KEY` — required when `AGENT_PROVIDER=codex`.
    - `AGENT_ENV_REPO` — your repo URL (e.g. `https://github.com/blake7ferrin/cursor-agent-env`); otherwise the API may return Bad Request.
    - `AGENT_ENV_REF` — optional; set to your feature branch (e.g. `cursor/hvac-pricing-agent-3304`) so the Telegram agent uses that branch’s MEMORY.md, docs, and skills (e.g. Housecall/MCP). Otherwise the agent uses the repo’s default branch.
    - `TELEGRAM_BOT_TOKEN` — the token from BotFather.
@@ -63,6 +78,10 @@ To use the bridge only as a Telegram bot (no PWA/HTTP needed for chat):
    ```
    Or with a local `.env`: `npm run dev`.
 4. **Chat** with your bot in Telegram. Each chat gets a persistent agent (`user_id = telegram:<chatId>`). Replies are sent back when the agent finishes (or "Agent still running." if it’s taking longer than the poll window).
+
+Codex routing behavior:
+- In `auto`, launch prompts route to `OPENAI_MODEL_MINI` by default and escalate to full for complex engineering prompts (refactor/architecture/multi-file/root-cause style requests).
+- Follow-ups stay on the same model selected at launch for response-chain compatibility and predictable costs.
 
 The bot uses long-polling; no webhook or public URL is required.
 
@@ -83,6 +102,7 @@ The bot uses long-polling; no webhook or public URL is required.
 - `POST /estimator/estimate` — Generate deterministic estimate totals and printable HTML. Auto-loads ingested `preferred` profile catalog by default (same runtime options as `changeout-plan`). Body: `{ "user_id": "...", "selections": [ ... ], "manual_items": [ ... ], "customer": { ... }, "project": { ... }, "adjustments": { ... }, "output": "json|html" }`. Validated; invalid payloads return `400` with field-level details.
 - `POST /estimator/export/housecall` — Build and send estimate to Housecall Pro. Supports dry-run and payload override. **Idempotency:** Send `Idempotency-Key` header or `idempotency_key` in body to avoid duplicate sends; repeated requests with the same key return the stored response with `X-Idempotency-Replay: true`.
 - `GET /integrations/housecall/config` — Returns Housecall auth mode summary (no secrets).
+- `GET /integrations/gdrive/config` — Returns Google Drive auth/config summary (no secrets).
 - `GET /integrations/housecall/customers` — List/search Housecall customers (query: `search`, `page_size`, `page`). Use to find existing customer IDs.
 - `POST /integrations/housecall/test` — Runs a lightweight authenticated test call to Housecall.
 - `POST /integrations/housecall/request` — Debug endpoint for direct Housecall API calls. **Disabled by default**; set `ENABLE_HOUSECALL_DEBUG_REQUEST=true` to enable (and ensure `DISABLE_HOUSECALL_REQUEST` is not set).
@@ -206,6 +226,15 @@ Cloud deployment/runbook for MCP registry + optional local relay: **docs/CLOUD-M
 ### Feature flag
 
 - **USE_MCP_TOOLS** — Set to `true` or `1` to register **GET /mcp/tools**, **POST /mcp/call**, and **POST /mcp**. When unset, these routes are not registered (404). Existing `/chat`, Telegram, estimator, and Housecall export flows are unchanged.
+
+### Google Drive config (phase 1)
+
+The bridge now exposes config discovery for Google Drive:
+
+- **HTTP:** `GET /integrations/gdrive/config`
+- **MCP tool:** `gdrive.get_config`
+
+This phase reports auth mode/readiness and default folder/scope settings. File upload/download tools can be added next using the same MCP adapter pattern.
 
 ## HVAC estimator MVP
 

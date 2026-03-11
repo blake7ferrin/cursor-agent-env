@@ -113,6 +113,13 @@ test('POST /integrations/housecall/request returns 403 when debug flag not enabl
   assert.ok(res.body?.error?.includes('disabled'));
 });
 
+test('GET /integrations/gdrive/config returns 200 with config summary', async () => {
+  const res = await request(app).get('/integrations/gdrive/config').set(auth);
+  assert.equal(res.status, 200);
+  assert.ok(typeof res.body?.gdrive === 'object');
+  assert.ok('authMode' in res.body.gdrive);
+});
+
 test('GET /mcp/tools returns 200 and list of tools when USE_MCP_TOOLS=true', async () => {
   const res = await request(app).get('/mcp/tools').set(auth);
   assert.equal(res.status, 200);
@@ -120,6 +127,7 @@ test('GET /mcp/tools returns 200 and list of tools when USE_MCP_TOOLS=true', asy
   assert.ok(res.body.tools.some((t) => t.name === 'housecall.get_config'));
   assert.ok(res.body.tools.some((t) => t.name === 'catalog.get_report'));
   assert.ok(res.body.tools.some((t) => t.name === 'scheduler.resolve_context'));
+  assert.ok(res.body.tools.some((t) => t.name === 'gdrive.get_config'));
 });
 
 test('POST /mcp/call housecall.get_config returns 200 with result', async () => {
@@ -141,6 +149,17 @@ test('POST /mcp/call catalog.get_report returns 200 with result', async () => {
     .send({ tool: 'catalog.get_report', arguments: {} });
   assert.equal(res.status, 200);
   assert.equal(res.body?.ok, true);
+});
+
+test('POST /mcp/call gdrive.get_config returns 200 with result', async () => {
+  const res = await request(app)
+    .post('/mcp/call')
+    .set(auth)
+    .set('Content-Type', 'application/json')
+    .send({ tool: 'gdrive.get_config', arguments: {} });
+  assert.equal(res.status, 200);
+  assert.equal(res.body?.ok, true);
+  assert.ok(typeof res.body?.result === 'object');
 });
 
 test('POST /mcp/call missing tool name returns 400', async () => {

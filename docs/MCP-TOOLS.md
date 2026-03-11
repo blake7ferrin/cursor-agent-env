@@ -193,6 +193,23 @@ Resolve appointment to job/estimate context. Currently delegates to Housecall; s
 
 ---
 
+## gdrive.*
+
+### gdrive.get_config
+
+Returns Google Drive integration config summary (auth mode, folder/scope defaults). No secrets.
+
+**Arguments:** none
+
+**Returns:** `{ authMode, hasServiceAccountJson, hasServiceAccountFields, hasOAuthClientCredentials, hasOAuthRefreshToken, hasAccessToken, folderId, sharedDriveId, useSharedDrive, scopes, apiBase, uploadBase }`
+
+**Example:**
+```json
+{ "tool": "gdrive.get_config", "arguments": {} }
+```
+
+---
+
 ## HTTP API (when USE_MCP_TOOLS=true)
 
 - **GET /mcp/tools** — List tools (auth required). Response: `{ tools: [ { name, description, inputSchema }, ... ] }`.

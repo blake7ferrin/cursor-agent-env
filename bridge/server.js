@@ -1,5 +1,5 @@
 /**
- * Bridge: Telegram + HTTP (PWA) -> Cursor Cloud Agents API.
+ * Bridge: Telegram + HTTP (PWA) -> agent provider API.
  * Run with: doppler run -- node server.js
  * Secrets come from Doppler (recommended); optional fallback: bridge/.env or environment.
  */
@@ -15,7 +15,7 @@ import express from 'express';
 import TelegramBot from 'node-telegram-bot-api';
 import { spawn } from 'child_process';
 import { readFileSync, existsSync } from 'fs';
-import * as cursor from './cursor-api.js';
+import { createAgentProviderFromEnv } from './providers/index.js';
 import { buildChangeoutPlan } from './estimator-changeout.js';
 import { buildEstimate, renderEstimateHtml } from './estimator-engine.js';
 import { EstimatorValidationError } from './estimator-domain.js';
@@ -33,6 +33,7 @@ import {
   housecallResolveAppointmentContext,
   catalogGetIngestReport,
   catalogLoadCatalog,
+  gdriveGetConfig,
 } from './mcp/index.js';
 import {
   getEstimatorProfile,
@@ -57,7 +58,6 @@ import { getIdempotencyResult, setIdempotencyResult } from './idempotency-store.
 import { runTool, listTools } from './mcp-server/tool-runner.js';
 
 const PORT = process.env.PORT || 3000;
-const apiKey = process.env.CURSOR_API_KEY;
 const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
 const agentEnvRepo = process.env.AGENT_ENV_REPO || 'https://github.com/your-org/cursor-agent-env';
 /** Optional: branch or ref for the agent repo (e.g. cursor/hvac-pricing-agent-3304). When set, new agents use this ref; unset = API default branch (usually main). */
@@ -69,13 +69,16 @@ const subagentRepoAllowlist = parseCsv(process.env.SUBAGENT_REPO_ALLOWLIST);
 const localActionAllowlist = parseCsv(process.env.LOCAL_ACTION_ALLOWLIST);
 const rateWindowMs = Number.parseInt(process.env.BRIDGE_RATE_WINDOW_MS || '60000', 10);
 const rateLimitPerWindow = Number.parseInt(process.env.BRIDGE_RATE_LIMIT_PER_WINDOW || '20', 10);
-
-if (!apiKey) {
-  console.error('Missing CURSOR_API_KEY. Run with: doppler run -- node server.js');
-  process.exit(1);
-}
 if (!bridgeAuthToken) {
   console.error('Missing BRIDGE_AUTH_TOKEN. Refusing to start unauthenticated HTTP bridge.');
+  process.exit(1);
+}
+
+let agentProvider;
+try {
+  agentProvider = createAgentProviderFromEnv();
+} catch (error) {
+  console.error(error.message || 'Failed to initialize agent provider.');
   process.exit(1);
 }
 
@@ -188,9 +191,9 @@ async function sendToAgent(userId, text) {
 
   try {
     if (existingId) {
-      res = await cursor.addFollowup(apiKey, existingId, prompt);
+      res = await agentProvider.addFollowup(existingId, prompt);
     } else {
-      res = await cursor.launchAgent(apiKey, {
+      res = await agentProvider.launchAgent({
         repository: agentEnvRepo,
         ...(agentEnvRef && { ref: agentEnvRef }),
         promptText: prompt,
@@ -215,7 +218,7 @@ async function sendToAgent(userId, text) {
 }
 
 async function getLatestAssistantMessage(agentId) {
-  const conv = await cursor.getAgentConversation(apiKey, agentId);
+  const conv = await agentProvider.getAgentConversation(agentId);
   const messages = conv.messages ?? conv.conversation ?? [];
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i];
@@ -245,7 +248,7 @@ async function waitForCompletion(agentId, options = {}) {
   let agent;
 
   while (Date.now() - start < maxWaitMs) {
-    agent = await cursor.getAgent(apiKey, agentId);
+    agent = await agentProvider.getAgent(agentId);
     const rawState = agent.status?.state ?? agent.state;
     state = rawState === 'complete' ? 'completed' : (rawState ?? 'running');
     if (state !== 'completed' && state !== 'failed' && state !== 'stopped' && state !== 'running') {
@@ -270,7 +273,7 @@ const useMcpTools = process.env.USE_MCP_TOOLS === 'true' || process.env.USE_MCP_
 const dispatchOrchestratorCommands = createDispatcher({
   subagentRepoAllowlist,
   localActionAllowlist,
-  launchSubagent: (params) => cursor.launchAgent(apiKey, params),
+  launchSubagent: (params) => agentProvider.launchAgent(params),
   runLocalAction: async ({ action }) => {
     if (!localActionEndpoint) {
       return { ok: false, status: 0, body: 'missing_local_action_endpoint' };
@@ -423,6 +426,10 @@ if (useMcpTools) {
 
 app.get('/integrations/housecall/config', requireBridgeAuth, (req, res) => {
   res.json({ housecall: housecallGetConfig() });
+});
+
+app.get('/integrations/gdrive/config', requireBridgeAuth, (req, res) => {
+  res.json({ gdrive: gdriveGetConfig() });
 });
 
 app.post('/integrations/housecall/test', requireBridgeAuth, applyRateLimit, async (req, res) => {
@@ -1081,8 +1088,8 @@ app.get('/debug/agent/:agentId', requireBridgeAuth, async (req, res) => {
   const { agentId } = req.params;
   try {
     const [agent, conv] = await Promise.all([
-      cursor.getAgent(apiKey, agentId),
-      cursor.getAgentConversation(apiKey, agentId),
+      agentProvider.getAgent(agentId),
+      agentProvider.getAgentConversation(agentId),
     ]);
     res.json({ agent, conversation: conv });
   } catch (err) {
@@ -1289,7 +1296,7 @@ const isServerEntry =
 if (isServerEntry) {
   app.listen(PORT, () => {
     console.log(
-      `Bridge listening on port ${PORT}. AGENT_ENV_REPO=${agentEnvRepo}${agentEnvRef ? ` AGENT_ENV_REF=${agentEnvRef}` : ''} ` +
+      `Bridge listening on port ${PORT}. AGENT_PROVIDER=${agentProvider.name} AGENT_ENV_REPO=${agentEnvRepo}${agentEnvRef ? ` AGENT_ENV_REF=${agentEnvRef}` : ''} ` +
         `SUBAGENT_REPOS=${subagentRepoAllowlist.length} LOCAL_ACTIONS=${localActionAllowlist.length}`,
     );
   });

@@ -123,6 +123,10 @@ export async function runTool(toolName, args, options = {}) {
         });
         return { ok: true, result };
       }
+      case 'gdrive.get_config': {
+        const result = mcp.gdriveGetConfig();
+        return { ok: true, result };
+      }
       default:
         return { ok: false, error: `Unknown tool: ${toolName}`, code: 'UNKNOWN_TOOL' };
     }
@@ -147,5 +151,6 @@ export function listTools() {
     { name: 'catalog.get_item_by_sku', description: 'Get a single catalog item by SKU.', inputSchema: { type: 'object', properties: { sku: { type: 'string' }, profile: { type: 'string' } }, required: ['sku'] } },
     { name: 'catalog.query_by_attribute', description: 'Query catalog by attribute key/value.', inputSchema: { type: 'object', properties: { attribute_key: { type: 'string' }, value: { type: 'string' }, profile: { type: 'string' } }, required: ['attribute_key', 'value'] } },
     { name: 'scheduler.resolve_context', description: 'Resolve appointment to job/estimate context (delegates to Housecall).', inputSchema: { type: 'object', properties: { appointment_id: { type: 'string' }, appointment_lookup_path: { type: 'string' }, appointment_lookup_method: { type: 'string' }, appointment_lookup_query: { type: 'object' } }, required: ['appointment_id'] } },
+    { name: 'gdrive.get_config', description: 'Get Google Drive integration config summary (auth mode, folder defaults, scopes).', inputSchema: { type: 'object', properties: {} } },
   ];
 }

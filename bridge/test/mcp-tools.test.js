@@ -19,7 +19,8 @@ test('listTools returns all expected tool names', () => {
   assert.ok(names.includes('catalog.get_item_by_sku'));
   assert.ok(names.includes('catalog.query_by_attribute'));
   assert.ok(names.includes('scheduler.resolve_context'));
-  assert.equal(tools.length, 10);
+  assert.ok(names.includes('gdrive.get_config'));
+  assert.equal(tools.length, 11);
 });
 
 test('runTool unknown tool returns UNKNOWN_TOOL', async () => {
@@ -47,6 +48,13 @@ test('runTool catalog.get_report returns ok and result', async () => {
   const out = await runTool('catalog.get_report', {});
   assert.equal(out.ok, true);
   assert.ok(out.result === null || (typeof out.result === 'object'));
+});
+
+test('runTool gdrive.get_config returns ok and result', async () => {
+  const out = await runTool('gdrive.get_config', {});
+  assert.equal(out.ok, true);
+  assert.ok(typeof out.result === 'object');
+  assert.ok('authMode' in out.result);
 });
 
 test('runTool catalog.load returns items array and count', async () => {
