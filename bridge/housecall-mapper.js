@@ -2,6 +2,10 @@ function roundMoney(value) {
   return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
 }
 
+function toCents(value) {
+  return Math.round((Number(value || 0) + Number.EPSILON) * 100);
+}
+
 const EXPLICIT_MODES = new Set(['create_estimate', 'add_to_job', 'update_estimate', 'add_option_note']);
 
 function asTrimmedString(value, defaultValue = '') {
@@ -44,14 +48,15 @@ function buildDescription(line) {
 function toHousecallLineItem(line, index) {
   const quantity = Number(line.quantity || 1);
   const safeQty = quantity > 0 ? quantity : 1;
-  const unitPrice = roundMoney(Number(line?.costs?.targetSellPrice || 0) / safeQty);
+  // Housecall expects integer cents for unit_price.
+  const unitPriceCents = toCents(Number(line?.costs?.targetSellPrice || 0) / safeQty);
   const costTotal = roundMoney(line?.costs?.totalCost || 0);
 
   return compactObject({
     name: line.name || `Line item ${index + 1}`,
     description: buildDescription(line),
     quantity: safeQty,
-    unit_price: unitPrice,
+    unit_price: unitPriceCents,
     taxable: line.taxable !== false,
     metadata: {
       source_item_type: line.itemType || '',
@@ -144,6 +149,7 @@ export function buildHousecallEstimatePayload(estimate, options = {}) {
   const estimateTotal = roundMoney(estimate?.totals?.grandTotal || 0);
   const taxRate = Number(estimate?.totals?.taxRate || 0);
   const discountAmount = roundMoney(estimate?.totals?.discountTotal || 0);
+  const discountAmountCents = toCents(discountAmount);
   const customerDraft = compactObject({
     first_name: customer.first_name,
     last_name: customer.last_name,
@@ -183,7 +189,7 @@ export function buildHousecallEstimatePayload(estimate, options = {}) {
         line_items: mappedLineItems,
       },
     ],
-    ...(discountAmount > 0 ? { discount: { amount: discountAmount, type: 'fixed' } } : {}),
+    ...(discountAmount > 0 ? { discount: { amount: discountAmountCents, type: 'fixed' } } : {}),
     metadata: {
       source: 'cursor-hvac-estimator',
       estimate_id: estimate.estimate_id,

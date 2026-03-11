@@ -56,7 +56,7 @@ test('buildHousecallEstimatePayload maps estimate to Housecall payload shape', (
   assert.equal(payload.tax_rate, 0.07);
   assert.equal(payload.options.length, 1);
   assert.equal(payload.options[0].line_items.length, 1);
-  assert.equal(payload.options[0].line_items[0].unit_price, 6400);
+  assert.equal(payload.options[0].line_items[0].unit_price, 640000);
   assert.ok(payload.options[0].line_items[0].description.includes('Code: HP-3T-16'));
   assert.ok(payload.options[0].line_items[0].description.includes('Cost: $3200.00'));
 });
