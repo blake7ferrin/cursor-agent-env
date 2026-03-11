@@ -20,7 +20,11 @@ test('listTools returns all expected tool names', () => {
   assert.ok(names.includes('catalog.query_by_attribute'));
   assert.ok(names.includes('scheduler.resolve_context'));
   assert.ok(names.includes('gdrive.get_config'));
-  assert.equal(tools.length, 11);
+  assert.ok(names.includes('gdrive.list_files'));
+  assert.ok(names.includes('gdrive.upload_file'));
+  assert.ok(names.includes('gdrive.download_file'));
+  assert.ok(names.includes('codex.get_usage'));
+  assert.equal(tools.length, 15);
 });
 
 test('runTool unknown tool returns UNKNOWN_TOOL', async () => {
@@ -55,6 +59,19 @@ test('runTool gdrive.get_config returns ok and result', async () => {
   assert.equal(out.ok, true);
   assert.ok(typeof out.result === 'object');
   assert.ok('authMode' in out.result);
+});
+
+test('runTool gdrive.upload_file missing required fields returns VALIDATION_ERROR', async () => {
+  const out = await runTool('gdrive.upload_file', {});
+  assert.equal(out.ok, false);
+  assert.equal(out.code, 'VALIDATION_ERROR');
+});
+
+test('runTool codex.get_usage returns ok and month summary', async () => {
+  const out = await runTool('codex.get_usage', {});
+  assert.equal(out.ok, true);
+  assert.ok(typeof out.result === 'object');
+  assert.ok(typeof out.result.month === 'string');
 });
 
 test('runTool catalog.load returns items array and count', async () => {

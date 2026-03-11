@@ -6,6 +6,7 @@ import {
   estimateBodySchema,
   exportHousecallBodySchema,
   housecallRequestBodySchema,
+  gdriveUploadBodySchema,
   formatValidationError,
 } from '../validation/schemas.js';
 
@@ -83,6 +84,19 @@ test('housecallRequestBodySchema accepts valid path', () => {
 
 test('housecallRequestBodySchema rejects path not starting with / or http', () => {
   const result = housecallRequestBodySchema.safeParse({ path: 'other' });
+  assert.equal(result.success, false);
+});
+
+test('gdriveUploadBodySchema accepts required upload fields', () => {
+  const result = gdriveUploadBodySchema.safeParse({
+    name: 'estimate.pdf',
+    content_base64: 'SGVsbG8=',
+  });
+  assert.equal(result.success, true);
+});
+
+test('gdriveUploadBodySchema rejects missing content_base64', () => {
+  const result = gdriveUploadBodySchema.safeParse({ name: 'estimate.pdf' });
   assert.equal(result.success, false);
 });
 

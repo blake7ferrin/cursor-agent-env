@@ -210,6 +210,95 @@ Returns Google Drive integration config summary (auth mode, folder/scope default
 
 ---
 
+### gdrive.list_files
+
+List files in Google Drive with optional query/folder/pagination options.
+
+**Arguments:**
+
+| Name            | Type   | Required | Description |
+|-----------------|--------|----------|-------------|
+| q               | string | no       | Drive query (e.g. `name contains 'Estimate' and trashed = false`) |
+| page_size       | number | no       | Max items per page |
+| page_token      | string | no       | Next page token |
+| folder_id       | string | no       | Restrict to folder |
+| shared_drive_id | string | no       | Shared drive id |
+| order_by        | string | no       | Drive ordering expression |
+| fields          | string | no       | Drive fields projection |
+
+**Returns:** `{ files: Array<object>, nextPageToken: string|null }`
+
+**Example:**
+```json
+{ "tool": "gdrive.list_files", "arguments": { "folder_id": "abc123", "page_size": 25 } }
+```
+
+---
+
+### gdrive.upload_file
+
+Upload a file to Google Drive from base64 content.
+
+**Arguments:**
+
+| Name            | Type   | Required | Description |
+|-----------------|--------|----------|-------------|
+| name            | string | yes      | Target filename |
+| content_base64  | string | yes      | File content in base64 |
+| mime_type       | string | no       | MIME type (default `application/octet-stream`) |
+| folder_id       | string | no       | Parent folder id |
+| shared_drive_id | string | no       | Shared drive id |
+
+**Returns:** Drive file metadata payload from upload API.
+
+**Example:**
+```json
+{ "tool": "gdrive.upload_file", "arguments": { "name": "estimate.pdf", "content_base64": "JVBERi0xLjQ..." } }
+```
+
+---
+
+### gdrive.download_file
+
+Download a file from Google Drive and return base64 content.
+
+**Arguments:**
+
+| Name            | Type   | Required | Description |
+|-----------------|--------|----------|-------------|
+| file_id         | string | yes      | Drive file id |
+| shared_drive_id | string | no       | Shared drive id |
+
+**Returns:** `{ file_id, mime_type, size, content_base64 }`
+
+**Example:**
+```json
+{ "tool": "gdrive.download_file", "arguments": { "file_id": "1abcDEF..." } }
+```
+
+---
+
+## codex.*
+
+### codex.get_usage
+
+Get codex usage summary (current month by default) including requests, token totals, and estimated USD cost.
+
+**Arguments:**
+
+| Name  | Type   | Required | Description |
+|-------|--------|----------|-------------|
+| month | string | no       | Month in `YYYY-MM` format |
+
+**Returns:** `{ month, total, by_model, by_route, by_user, updated_at }`
+
+**Example:**
+```json
+{ "tool": "codex.get_usage", "arguments": { "month": "2026-03" } }
+```
+
+---
+
 ## HTTP API (when USE_MCP_TOOLS=true)
 
 - **GET /mcp/tools** — List tools (auth required). Response: `{ tools: [ { name, description, inputSchema }, ... ] }`.

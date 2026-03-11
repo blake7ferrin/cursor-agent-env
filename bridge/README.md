@@ -23,12 +23,17 @@ Secrets are not always available from the environment (e.g. in CI or when the br
    - `OPENAI_MODEL` / `OPENAI_MODEL_FULL` — optional full model override for codex provider (default `gpt-5`).
    - `OPENAI_MODEL_MINI` — optional mini model override (default `gpt-5-mini`).
    - `OPENAI_MODEL_ROUTING` — `auto` (default), `mini`, or `full`.
+   - `OPENAI_BUDGET_MONTHLY_USD` — optional monthly budget cap for codex auto-routing.
+   - `OPENAI_BUDGET_FORCE_MINI_THRESHOLD_PCT` — optional threshold ratio to force mini in auto mode (default `1.0`).
+   - `OPENAI_PRICE_INPUT_FULL_PER_1M`, `OPENAI_PRICE_OUTPUT_FULL_PER_1M`, `OPENAI_PRICE_INPUT_MINI_PER_1M`, `OPENAI_PRICE_OUTPUT_MINI_PER_1M` — optional cost model overrides for telemetry/budget logic.
    - `OPENAI_API_BASE` — optional API base override (default `https://api.openai.com`).
    - `AGENT_ENV_REPO` — GitHub URL of this repo (e.g. `https://github.com/your-org/cursor-agent-env`).
    - `AGENT_ENV_REF` — optional; branch or ref for the agent repo (e.g. `cursor/hvac-pricing-agent-3304`). When set, new Telegram/PWA agents use this ref; when unset, the Cursor API uses the repo’s default branch (usually `main`). Use this so the agent has the latest docs/memory without merging to main.
    - `BRIDGE_AUTH_TOKEN` — required token for HTTP clients (`/chat`, `/agent/:userId`). Send as `x-bridge-token` or `Authorization: Bearer ...`.
+   - `CHATGPT_ACTION_TOKEN` — optional dedicated token for `/chatgpt/*` action routes (`x-chatgpt-token` header). Defaults to `BRIDGE_AUTH_TOKEN` if unset.
    - `SUBAGENT_REPO_ALLOWLIST`, `LOCAL_ACTION_ALLOWLIST`, `LOCAL_ACTION_ENDPOINT`, `LOCAL_ACTION_AUTH_TOKEN` — optional orchestrator settings.
    - `REDIS_URL` — optional Redis for persistent agent mapping, rate limiting, **async job state**, and **idempotency cache**. When unset, in-memory (and file for agent mapping) fallbacks are used.
+   - `BRIDGE_CODEX_SESSION_TTL_SECONDS` — optional TTL for persisted codex sessions (default 604800 / 7 days).
    - `TELEGRAM_BOT_TOKEN` — optional; from [@BotFather](https://t.me/BotFather) if you want Telegram.
    - `DISABLE_HOUSECALL_REQUEST` — set to `true` or `1` to disable `POST /integrations/housecall/request` (e.g. in production).
    - `ENABLE_HOUSECALL_DEBUG_REQUEST` — set to `true` or `1` to **allow** the debug proxy `POST /integrations/housecall/request`. When unset (or `false`), the endpoint returns 403. Use with `DISABLE_HOUSECALL_REQUEST` unset.
@@ -38,6 +43,7 @@ Secrets are not always available from the environment (e.g. in CI or when the br
    - `GDRIVE_CLIENT_ID`, `GDRIVE_CLIENT_SECRET`, `GDRIVE_REFRESH_TOKEN` — optional OAuth refresh flow.
    - `GDRIVE_ACCESS_TOKEN` — optional direct access token mode.
    - `GDRIVE_FOLDER_ID`, `GDRIVE_SHARED_DRIVE_ID`, `GDRIVE_USE_SHARED_DRIVE`, `GDRIVE_SCOPES` — optional defaults for Drive operations.
+   - `GDRIVE_MAX_DOWNLOAD_BYTES` — optional download safety cap in bytes (default 10485760 / 10MB).
    - Housecall/estimator vars as needed — see [docs/DOPPLER.md](../docs/DOPPLER.md).
 4. Run the bridge with Doppler injecting env vars:
    ```bash
@@ -81,6 +87,7 @@ To use the bridge only as a Telegram bot (no PWA/HTTP needed for chat):
 
 Codex routing behavior:
 - In `auto`, launch prompts route to `OPENAI_MODEL_MINI` by default and escalate to full for complex engineering prompts (refactor/architecture/multi-file/root-cause style requests).
+- In `auto`, budget policy can force mini when current month spend reaches `OPENAI_BUDGET_MONTHLY_USD * OPENAI_BUDGET_FORCE_MINI_THRESHOLD_PCT`.
 - Follow-ups stay on the same model selected at launch for response-chain compatibility and predictable costs.
 
 The bot uses long-polling; no webhook or public URL is required.
@@ -93,6 +100,13 @@ The bot uses long-polling; no webhook or public URL is required.
 - `POST /chat` — Send a message to the agent. Body: `{ "user_id": "required-id", "message": "your text" }`. Requires auth token. **Sync (default):** Returns `{ reply, agent_id, state, parsed, dispatched }` when the agent has finished (or a partial reply on timeout). **Async:** Add `?async=true` or `"async": true` in body to get `202 Accepted` with `job_id`, `status_url`; poll `GET /jobs/:id` for status and result.
 - `GET /jobs/:id` — Get async chat job status and result. Requires auth token. Returns `{ job_id, agent_id, user_id, status, result, error, created_at, status_url }`. Use after `POST /chat` with `async=true`.
 - `GET /agent/:userId` — Get stored `agent_id` for a user (if any). Requires auth token.
+- `GET /usage/codex` — Get codex monthly usage summary (requests, token totals, estimated USD cost). Optional query: `month=YYYY-MM`.
+- `GET /chatgpt/openapi.json` — OpenAPI schema for Custom GPT Actions import.
+- `GET /chatgpt/health` — ChatGPT action route health check (requires `x-chatgpt-token`).
+- `POST /chatgpt/chat` — ChatGPT action chat endpoint. Body: `{ "session_id": "...", "message": "...", "async": true|false }`.
+- `GET /chatgpt/jobs/:id` — Poll async chat jobs started via `/chatgpt/chat`.
+- `GET /chatgpt/usage/codex` — Codex usage summary for action clients.
+- `GET /chatgpt/gdrive/config` — Google Drive config summary for action clients.
 - `POST /ingest` — Run HVAC catalog import from `bridge/imports/incoming/`. Requires auth token. Returns validation report. Optional body/query: `profile=preferred|canonical_csv_only` and/or `only=...`. See `imports/README.md`.
 - `GET /` — Simple PWA chat UI (served from `public/`).
 - `PUT /estimator/config` — Save pricing assumptions for one user. Body: `{ "user_id": "...", "config": { ... } }`.
@@ -105,6 +119,9 @@ The bot uses long-polling; no webhook or public URL is required.
 - `POST /estimator/export/housecall` — Build and send estimate to Housecall Pro. Supports dry-run and payload override. **Idempotency:** Send `Idempotency-Key` header or `idempotency_key` in body to avoid duplicate sends; repeated requests with the same key return the stored response with `X-Idempotency-Replay: true`.
 - `GET /integrations/housecall/config` — Returns Housecall auth mode summary (no secrets).
 - `GET /integrations/gdrive/config` — Returns Google Drive auth/config summary (no secrets).
+- `GET /integrations/gdrive/files` — List files using Drive query params (`q`, `page_size`, `page_token`, `folder_id`, `shared_drive_id`, `order_by`, `fields`).
+- `POST /integrations/gdrive/upload` — Upload base64 file payload. Body: `{ "name": "...", "content_base64": "...", "mime_type": "...", "folder_id": "...", "shared_drive_id": "..." }`.
+- `GET /integrations/gdrive/download/:fileId` — Download file content as base64 JSON (`content_base64`, `mime_type`, `size`).
 - `GET /integrations/housecall/customers` — List/search Housecall customers (query: `search`, `page_size`, `page`). Use to find existing customer IDs.
 - `POST /integrations/housecall/test` — Runs a lightweight authenticated test call to Housecall.
 - `POST /integrations/housecall/request` — Debug endpoint for direct Housecall API calls. **Disabled by default**; set `ENABLE_HOUSECALL_DEBUG_REQUEST=true` to enable (and ensure `DISABLE_HOUSECALL_REQUEST` is not set).
@@ -231,12 +248,13 @@ Cloud deployment/runbook for MCP registry + optional local relay: **docs/CLOUD-M
 
 ### Google Drive config (phase 1)
 
-The bridge now exposes config discovery for Google Drive:
+The bridge now exposes config and file operations for Google Drive:
 
 - **HTTP:** `GET /integrations/gdrive/config`
-- **MCP tool:** `gdrive.get_config`
+- **HTTP:** `GET /integrations/gdrive/files`, `POST /integrations/gdrive/upload`, `GET /integrations/gdrive/download/:fileId`
+- **MCP tools:** `gdrive.get_config`, `gdrive.list_files`, `gdrive.upload_file`, `gdrive.download_file`
 
-This phase reports auth mode/readiness and default folder/scope settings. File upload/download tools can be added next using the same MCP adapter pattern.
+These routes/tools report auth readiness and support list/upload/download flows for remote file transfer.
 
 ## HVAC estimator MVP
 

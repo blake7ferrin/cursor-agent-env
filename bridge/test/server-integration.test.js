@@ -9,17 +9,46 @@ import request from 'supertest';
 
 // Set auth so server module can load (it exits if missing)
 process.env.BRIDGE_AUTH_TOKEN = process.env.BRIDGE_AUTH_TOKEN || 'test-bridge-token';
+process.env.CHATGPT_ACTION_TOKEN = process.env.CHATGPT_ACTION_TOKEN || 'test-chatgpt-token';
 process.env.CURSOR_API_KEY = process.env.CURSOR_API_KEY || 'key-test-placeholder';
 process.env.USE_MCP_TOOLS = 'true';
 
 const { app } = await import('../server.js');
 
 const auth = { Authorization: 'Bearer test-bridge-token' };
+const chatgptAuth = { 'x-chatgpt-token': 'test-chatgpt-token' };
 
 test('GET /health returns 200 ok', async () => {
   const res = await request(app).get('/health');
   assert.equal(res.status, 200);
   assert.equal(res.body?.ok, true);
+});
+
+test('GET /chatgpt/openapi.json returns OpenAPI spec', async () => {
+  const res = await request(app).get('/chatgpt/openapi.json');
+  assert.equal(res.status, 200);
+  assert.ok(`${res.text || ''}`.includes('"openapi"'));
+});
+
+test('GET /usage/codex returns 200 usage summary', async () => {
+  const res = await request(app).get('/usage/codex').set(auth);
+  assert.equal(res.status, 200);
+  assert.ok(typeof res.body?.month === 'string');
+  assert.ok(typeof res.body?.total === 'object');
+});
+
+test('GET /chatgpt/health requires chatgpt auth token', async () => {
+  const unauthorized = await request(app).get('/chatgpt/health');
+  assert.equal(unauthorized.status, 401);
+  const authorized = await request(app).get('/chatgpt/health').set(chatgptAuth);
+  assert.equal(authorized.status, 200);
+  assert.equal(authorized.body?.ok, true);
+});
+
+test('GET /chatgpt/usage/codex returns 200 usage summary', async () => {
+  const res = await request(app).get('/chatgpt/usage/codex').set(chatgptAuth);
+  assert.equal(res.status, 200);
+  assert.ok(typeof res.body?.month === 'string');
 });
 
 test('POST /chat with async=true returns 202 and job_id', async () => {
@@ -32,6 +61,17 @@ test('POST /chat with async=true returns 202 and job_id', async () => {
   assert.ok(res.body?.job_id);
   assert.equal(res.body?.status, 'pending');
   assert.ok(res.body?.status_url);
+});
+
+test('POST /chatgpt/chat with async=true returns 202 and chatgpt status_url', async () => {
+  const res = await request(app)
+    .post('/chatgpt/chat?async=true')
+    .set(chatgptAuth)
+    .set('Content-Type', 'application/json')
+    .send({ session_id: 'mobile-1', message: 'hello from chatgpt' });
+  assert.equal(res.status, 202);
+  assert.ok(res.body?.job_id);
+  assert.ok(`${res.body?.status_url || ''}`.includes('/chatgpt/jobs/'));
 });
 
 test('GET /jobs/:id returns 200 with job when job exists', async () => {
@@ -48,6 +88,21 @@ test('GET /jobs/:id returns 200 with job when job exists', async () => {
   assert.equal(get.status, 200);
   assert.equal(get.body?.job_id, jobId);
   assert.ok(['pending', 'running', 'completed', 'failed'].includes(get.body?.status));
+});
+
+test('GET /chatgpt/jobs/:id returns 200 with job when job exists', async () => {
+  const create = await request(app)
+    .post('/chatgpt/chat?async=true')
+    .set(chatgptAuth)
+    .set('Content-Type', 'application/json')
+    .send({ session_id: 'mobile-job-user', message: 'hi' });
+  assert.equal(create.status, 202);
+  const jobId = create.body?.job_id;
+  assert.ok(jobId);
+
+  const get = await request(app).get(`/chatgpt/jobs/${jobId}`).set(chatgptAuth);
+  assert.equal(get.status, 200);
+  assert.equal(get.body?.job_id, jobId);
 });
 
 test('GET /jobs/:id returns 404 for unknown job', async () => {
@@ -120,6 +175,23 @@ test('GET /integrations/gdrive/config returns 200 with config summary', async ()
   assert.ok('authMode' in res.body.gdrive);
 });
 
+test('GET /chatgpt/gdrive/config returns 200 with config summary', async () => {
+  const res = await request(app).get('/chatgpt/gdrive/config').set(chatgptAuth);
+  assert.equal(res.status, 200);
+  assert.ok(typeof res.body?.gdrive === 'object');
+  assert.ok('authMode' in res.body.gdrive);
+});
+
+test('POST /integrations/gdrive/upload invalid body returns 400 with details', async () => {
+  const res = await request(app)
+    .post('/integrations/gdrive/upload')
+    .set(auth)
+    .set('Content-Type', 'application/json')
+    .send({ name: 'missing-content' });
+  assert.equal(res.status, 400);
+  assert.ok(Array.isArray(res.body?.details));
+});
+
 test('GET /mcp/tools returns 200 and list of tools when USE_MCP_TOOLS=true', async () => {
   const res = await request(app).get('/mcp/tools').set(auth);
   assert.equal(res.status, 200);
@@ -128,6 +200,10 @@ test('GET /mcp/tools returns 200 and list of tools when USE_MCP_TOOLS=true', asy
   assert.ok(res.body.tools.some((t) => t.name === 'catalog.get_report'));
   assert.ok(res.body.tools.some((t) => t.name === 'scheduler.resolve_context'));
   assert.ok(res.body.tools.some((t) => t.name === 'gdrive.get_config'));
+  assert.ok(res.body.tools.some((t) => t.name === 'gdrive.list_files'));
+  assert.ok(res.body.tools.some((t) => t.name === 'gdrive.upload_file'));
+  assert.ok(res.body.tools.some((t) => t.name === 'gdrive.download_file'));
+  assert.ok(res.body.tools.some((t) => t.name === 'codex.get_usage'));
 });
 
 test('POST /mcp/call housecall.get_config returns 200 with result', async () => {
@@ -160,6 +236,28 @@ test('POST /mcp/call gdrive.get_config returns 200 with result', async () => {
   assert.equal(res.status, 200);
   assert.equal(res.body?.ok, true);
   assert.ok(typeof res.body?.result === 'object');
+});
+
+test('POST /mcp/call gdrive.upload_file missing fields returns VALIDATION_ERROR', async () => {
+  const res = await request(app)
+    .post('/mcp/call')
+    .set(auth)
+    .set('Content-Type', 'application/json')
+    .send({ tool: 'gdrive.upload_file', arguments: {} });
+  assert.equal(res.status, 200);
+  assert.equal(res.body?.ok, false);
+  assert.equal(res.body?.code, 'VALIDATION_ERROR');
+});
+
+test('POST /mcp/call codex.get_usage returns 200 with result', async () => {
+  const res = await request(app)
+    .post('/mcp/call')
+    .set(auth)
+    .set('Content-Type', 'application/json')
+    .send({ tool: 'codex.get_usage', arguments: {} });
+  assert.equal(res.status, 200);
+  assert.equal(res.body?.ok, true);
+  assert.ok(typeof res.body?.result?.month === 'string');
 });
 
 test('POST /mcp/call missing tool name returns 400', async () => {
