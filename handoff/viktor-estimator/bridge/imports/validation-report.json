@@ -1,0 +1,1469 @@
+{
+  "generated": "2026-03-06T00:27:21.013Z",
+  "sourceDir": "imports/incoming",
+  "profile": "preferred",
+  "filesProcessed": [
+    "DayNight_ACPro_AI_Catalog.xlsx",
+    "PolarAir_ACPro_Equipment_v7_AHRI_SEER2_ALL_TONNAGES_CLEAN.csv",
+    "PolarAir_ChangeOut_Pricebook_v1.csv"
+  ],
+  "manualReferences": [
+    {
+      "file": "A2L_ACProMiniSplit2025.08.pdf",
+      "path": "C:\\Users\\blake\\cursor-agent-env\\cursor-agent-env\\bridge\\imports\\incoming\\A2L_ACProMiniSplit2025.08.pdf",
+      "mode": "reference_only"
+    },
+    {
+      "file": "ARIZONA EQUIPMENT - A PRICED GUIDE.pdf",
+      "path": "C:\\Users\\blake\\cursor-agent-env\\cursor-agent-env\\bridge\\imports\\incoming\\ARIZONA EQUIPMENT - A PRICED GUIDE.pdf",
+      "mode": "reference_only"
+    },
+    {
+      "file": "HVAC Installers Pricing 10_4_24 (1).pdf",
+      "path": "C:\\Users\\blake\\cursor-agent-env\\cursor-agent-env\\bridge\\imports\\incoming\\HVAC Installers Pricing 10_4_24 (1).pdf",
+      "mode": "reference_only"
+    }
+  ],
+  "totalRows": 367,
+  "validRows": 269,
+  "errors": [],
+  "warnings": [
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 289,
+      "name": "AC Pro System FURN-M-L1A40V12A",
+      "message": "Equipment row: no tonnage parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 289,
+      "name": "AC Pro System FURN-M-L1A40V12A",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 290,
+      "name": "AC Pro 5 Ton System FURN-M-L1A60V12A",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 291,
+      "name": "AC Pro System FURN-M-L1B80V16A",
+      "message": "Equipment row: no tonnage parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 291,
+      "name": "AC Pro System FURN-M-L1B80V16A",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 292,
+      "name": "AC Pro System FURN-M-L1C100V20A",
+      "message": "Equipment row: no tonnage parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 292,
+      "name": "AC Pro System FURN-M-L1C100V20A",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 293,
+      "name": "AC Pro 5 Ton System FURN-M-R2B60V12A",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 294,
+      "name": "AC Pro System FURN-M-R2B80V12A",
+      "message": "Equipment row: no tonnage parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 294,
+      "name": "AC Pro System FURN-M-R2B80V12A",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 295,
+      "name": "AC Pro System FURN-M-R2C100V20A",
+      "message": "Equipment row: no tonnage parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 295,
+      "name": "AC Pro System FURN-M-R2C100V20A",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 296,
+      "name": "AC Pro System FURN-M-R2C80V16A",
+      "message": "Equipment row: no tonnage parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 296,
+      "name": "AC Pro System FURN-M-R2C80V16A",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 297,
+      "name": "AC Pro 2 Ton System PKGE-M-024L1060BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 298,
+      "name": "AC Pro 2.5 Ton System PKGE-M-030L1060BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 299,
+      "name": "AC Pro 3 Ton System PKGE-M-036L1090BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 300,
+      "name": "AC Pro 3.5 Ton System PKGE-M-042L1090BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 301,
+      "name": "AC Pro 4 Ton System PKGE-M-048L1090BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 302,
+      "name": "AC Pro 5 Ton System PKGE-M-060L1090BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 303,
+      "name": "AC Pro 5 Ton System PKGE-M-060L1110BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 304,
+      "name": "AC Pro 4 Ton System PKHP-M-0241BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 305,
+      "name": "AC Pro System PKHP-M-0361BB",
+      "message": "Equipment row: no tonnage parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 305,
+      "name": "AC Pro System PKHP-M-0361BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 306,
+      "name": "AC Pro System PKHP-M-0481BB",
+      "message": "Equipment row: no tonnage parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 306,
+      "name": "AC Pro System PKHP-M-0481BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 307,
+      "name": "AC Pro System PKHP-M-0601BB",
+      "message": "Equipment row: no tonnage parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 307,
+      "name": "AC Pro System PKHP-M-0601BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 308,
+      "name": "AC Pro System PKHP-M-0601CB",
+      "message": "Equipment row: no tonnage parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 308,
+      "name": "AC Pro System PKHP-M-0601CB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 309,
+      "name": "AC Pro 2 Ton System PKHP-P-0241BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 310,
+      "name": "AC Pro 2 Ton System PKHP-P-0301BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 311,
+      "name": "AC Pro 2 Ton System PKHP-P-0361BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 312,
+      "name": "AC Pro 2.5 Ton System PKHP-P-0421BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 313,
+      "name": "AC Pro 3 Ton System PKHP-P-0481BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 314,
+      "name": "AC Pro 4 Ton System PKHP-P-0601BB",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 315,
+      "name": "AC Pro 2 Ton System PKHP-X-024VBC",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 316,
+      "name": "AC Pro 3 Ton System PKHP-X-036VBC",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 317,
+      "name": "AC Pro System PKHP-X-048VBC",
+      "message": "Equipment row: no tonnage parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 317,
+      "name": "AC Pro System PKHP-X-048VBC",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 318,
+      "name": "AC Pro System PKHP-X-060VBC",
+      "message": "Equipment row: no tonnage parsed from name"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 318,
+      "name": "AC Pro System PKHP-X-060VBC",
+      "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+    }
+  ],
+  "duplicates": [
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 33,
+      "name": "Day & Night 3 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - ION MODULATING INVERTER - VARIABLE AIRFLOW - COMMUNICATING-  UP TO 23 SEER2 HP|Day & Night 3 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 35,
+      "name": "Day & Night 4 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - ION MODULATING INVERTER - VARIABLE AIRFLOW - COMMUNICATING-  UP TO 23 SEER2 HP|Day & Night 4 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 39,
+      "name": "Day & Night 3 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - 2 STAGE MAINLINE - VARIABLE AIRFLOW - COMMUNICATING - UP TO 18 SEER2 HP|Day & Night 3 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 41,
+      "name": "Day & Night 4 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - 2 STAGE MAINLINE - VARIABLE AIRFLOW - COMMUNICATING - UP TO 18 SEER2 HP|Day & Night 4 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 52,
+      "name": "Day & Night 3 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - 2 STAGE - VARIABLE AIRFLOW - UPTO 17.5 SEER2 HP|Day & Night 3 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 54,
+      "name": "Day & Night 4 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - 2 STAGE - VARIABLE AIRFLOW - UPTO 17.5 SEER2 HP|Day & Night 4 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 60,
+      "name": "Day & Night 3 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - 1 STAGE - VARIABLE AIRFLOW- UP TO 15.5 SEER2 HP|Day & Night 3 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 62,
+      "name": "Day & Night 3.5 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - 1 STAGE - VARIABLE AIRFLOW- UP TO 15.5 SEER2 HP|Day & Night 3.5 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 64,
+      "name": "Day & Night 4 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - 1 STAGE - VARIABLE AIRFLOW- UP TO 15.5 SEER2 HP|Day & Night 4 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 67,
+      "name": "Day & Night 1.5 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - 1 STAGE - ECM - UP TO 15.2 SEER2 HP|Day & Night 1.5 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 69,
+      "name": "Day & Night 2 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - 1 STAGE - ECM - UP TO 15.2 SEER2 HP|Day & Night 2 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 71,
+      "name": "Day & Night 2.5 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - 1 STAGE - ECM - UP TO 15.2 SEER2 HP|Day & Night 2.5 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 73,
+      "name": "Day & Night 3 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - 1 STAGE - ECM - UP TO 15.2 SEER2 HP|Day & Night 3 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 75,
+      "name": "Day & Night 3.5 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - 1 STAGE - ECM - UP TO 15.2 SEER2 HP|Day & Night 3.5 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 77,
+      "name": "Day & Night 4 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - 454b HP Split - 1 STAGE - ECM - UP TO 15.2 SEER2 HP|Day & Night 4 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 87,
+      "name": "Day & Night 5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 2 STAGE CLG / 2 STAGE HTG MAINLINE - VARIABLE AIRFLOW - COMMUNICATING - UP TO 18 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 89,
+      "name": "Day & Night 2 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 90,
+      "name": "Day & Night 2 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 91,
+      "name": "Day & Night 2 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 93,
+      "name": "Day & Night 2.5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2.5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 95,
+      "name": "Day & Night 3 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 97,
+      "name": "Day & Night 3.5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3.5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 98,
+      "name": "Day & Night 3.5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3.5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 100,
+      "name": "Day & Night 4 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 4 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 101,
+      "name": "Day & Night 4 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 4 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 103,
+      "name": "Day & Night 5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 104,
+      "name": "Day & Night 5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 112,
+      "name": "Day & Night 2.5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2.5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 114,
+      "name": "Day & Night 3 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 116,
+      "name": "Day & Night 3.5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3.5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 118,
+      "name": "Day & Night 4 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 4 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 120,
+      "name": "Day & Night 5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 454b 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 156,
+      "name": "Day & Night 2 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 2 STAGE - INVERTER - VARIABLE AIRFLOW - COMMUNICATING-  UPTO 17 SEER2 HP|Day & Night 2 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 158,
+      "name": "Day & Night 3 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 2 STAGE - INVERTER - VARIABLE AIRFLOW - COMMUNICATING-  UPTO 17 SEER2 HP|Day & Night 3 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 159,
+      "name": "Day & Night 3 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 2 STAGE - INVERTER - VARIABLE AIRFLOW - COMMUNICATING-  UPTO 17 SEER2 HP|Day & Night 3 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 161,
+      "name": "Day & Night 4 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 2 STAGE - INVERTER - VARIABLE AIRFLOW - COMMUNICATING-  UPTO 17 SEER2 HP|Day & Night 4 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 162,
+      "name": "Day & Night 4 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 2 STAGE - INVERTER - VARIABLE AIRFLOW - COMMUNICATING-  UPTO 17 SEER2 HP|Day & Night 4 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 163,
+      "name": "Day & Night 4 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 2 STAGE - INVERTER - VARIABLE AIRFLOW - COMMUNICATING-  UPTO 17 SEER2 HP|Day & Night 4 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 165,
+      "name": "Day & Night 5 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 2 STAGE - INVERTER - VARIABLE AIRFLOW - COMMUNICATING-  UPTO 17 SEER2 HP|Day & Night 5 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 169,
+      "name": "Day & Night 3 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - VARIABLE SPEED AIR FLOW - UPTO 15.2 SEER2 HP|Day & Night 3 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 174,
+      "name": "Day & Night 1.5 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - ECM MOTOR - UPTO 15.2 SEER2 HP|Day & Night 1.5 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 176,
+      "name": "Day & Night 2 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - ECM MOTOR - UPTO 15.2 SEER2 HP|Day & Night 2 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 178,
+      "name": "Day & Night 2.5 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - ECM MOTOR - UPTO 15.2 SEER2 HP|Day & Night 2.5 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 180,
+      "name": "Day & Night 3 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - ECM MOTOR - UPTO 15.2 SEER2 HP|Day & Night 3 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 182,
+      "name": "Day & Night 3.5 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - ECM MOTOR - UPTO 15.2 SEER2 HP|Day & Night 3.5 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 184,
+      "name": "Day & Night 4 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - ECM MOTOR - UPTO 15.2 SEER2 HP|Day & Night 4 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 188,
+      "name": "Day & Night 3 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 2 STAGE - VARIABLE AIRFLOW - UPTO 17.5 SEER2 HP|Day & Night 3 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 189,
+      "name": "Day & Night 3 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 2 STAGE - VARIABLE AIRFLOW - UPTO 17.5 SEER2 HP|Day & Night 3 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 191,
+      "name": "Day & Night 4 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 2 STAGE - VARIABLE AIRFLOW - UPTO 17.5 SEER2 HP|Day & Night 4 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 197,
+      "name": "Day & Night 3 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - VARIABLE AIRFLOW- UP TO 15.5 SEER2 HP|Day & Night 3 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 199,
+      "name": "Day & Night 3.5 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - VARIABLE AIRFLOW- UP TO 15.5 SEER2 HP|Day & Night 3.5 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 203,
+      "name": "Day & Night 1.5 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - ECM - UP TO 15.2 SEER2 HP|Day & Night 1.5 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 205,
+      "name": "Day & Night 2 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - ECM - UP TO 15.2 SEER2 HP|Day & Night 2 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 207,
+      "name": "Day & Night 2.5 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - ECM - UP TO 15.2 SEER2 HP|Day & Night 2.5 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 209,
+      "name": "Day & Night 3 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - ECM - UP TO 15.2 SEER2 HP|Day & Night 3 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 211,
+      "name": "Day & Night 3.5 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - ECM - UP TO 15.2 SEER2 HP|Day & Night 3.5 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 213,
+      "name": "Day & Night 4 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1 STAGE - ECM - UP TO 15.2 SEER2 HP|Day & Night 4 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 220,
+      "name": "Day & Night 3.5 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1-STAGE UP TO 16 - SEER - HP (M CONDENSERS)|Day & Night 3.5 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 222,
+      "name": "Day & Night 4 Ton Heat Pump Split",
+      "key": "EQUIPMENT|Day & Night - Heat Pump Split - 1-STAGE UP TO 16 - SEER - HP (M CONDENSERS)|Day & Night 4 Ton Heat Pump Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 227,
+      "name": "Day & Night 2 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - COMMUNICATING - 2 STAGE CLG - 2 STAGE HTG - UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 228,
+      "name": "Day & Night 2 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - COMMUNICATING - 2 STAGE CLG - 2 STAGE HTG - UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 229,
+      "name": "Day & Night 2 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - COMMUNICATING - 2 STAGE CLG - 2 STAGE HTG - UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 231,
+      "name": "Day & Night 3 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - COMMUNICATING - 2 STAGE CLG - 2 STAGE HTG - UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 233,
+      "name": "Day & Night 4 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - COMMUNICATING - 2 STAGE CLG - 2 STAGE HTG - UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 4 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 234,
+      "name": "Day & Night 4 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - COMMUNICATING - 2 STAGE CLG - 2 STAGE HTG - UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 4 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 235,
+      "name": "Day & Night 4 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - COMMUNICATING - 2 STAGE CLG - 2 STAGE HTG - UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 4 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 237,
+      "name": "Day & Night 5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - COMMUNICATING - 2 STAGE CLG - 2 STAGE HTG - UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 238,
+      "name": "Day & Night 5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - COMMUNICATING - 2 STAGE CLG - 2 STAGE HTG - UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 239,
+      "name": "Day & Night 5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - COMMUNICATING - 2 STAGE CLG - 2 STAGE HTG - UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 241,
+      "name": "Day & Night 2 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 242,
+      "name": "Day & Night 2 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 243,
+      "name": "Day & Night 2 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 245,
+      "name": "Day & Night 2.5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2.5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 247,
+      "name": "Day & Night 3 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 249,
+      "name": "Day & Night 3.5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3.5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 250,
+      "name": "Day & Night 3.5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3.5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 252,
+      "name": "Day & Night 4 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 4 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 253,
+      "name": "Day & Night 4 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 4 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 255,
+      "name": "Day & Night 5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 256,
+      "name": "Day & Night 5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE CLG - 1 STAGE HTG - UP TO 16.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 258,
+      "name": "Day & Night 2 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 2 STAGE CLG - 2 STAGE HTG - UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 260,
+      "name": "Day & Night 3 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 2 STAGE CLG - 2 STAGE HTG - UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 262,
+      "name": "Day & Night 4 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 2 STAGE CLG - 2 STAGE HTG - UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 4 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 264,
+      "name": "Day & Night 5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 2 STAGE CLG - 2 STAGE HTG - UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 267,
+      "name": "Day & Night 3 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 2 STAGE CLG - 1 STAGE HEAT - VARIABLE AIRFLOW UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 269,
+      "name": "Day & Night 4 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 2 STAGE CLG - 1 STAGE HEAT - VARIABLE AIRFLOW UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 4 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 271,
+      "name": "Day & Night 5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 2 STAGE CLG - 1 STAGE HEAT - VARIABLE AIRFLOW UP TO 17.5 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 274,
+      "name": "Day & Night 2 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 276,
+      "name": "Day & Night 2.5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 2.5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 278,
+      "name": "Day & Night 3 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 279,
+      "name": "Day & Night 3 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 281,
+      "name": "Day & Night 3.5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3.5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 282,
+      "name": "Day & Night 3.5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 3.5 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 284,
+      "name": "Day & Night 4 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 4 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 285,
+      "name": "Day & Night 4 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 4 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 286,
+      "name": "Day & Night 4 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 4 Ton Gas Split"
+    },
+    {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "row": 288,
+      "name": "Day & Night 5 Ton Gas Split",
+      "key": "EQUIPMENT|Day & Night - 80% Gas Split - 1 STAGE UP TO 16 SEER2  GAS SPLIT - MULTI-POSITION COIL|Day & Night 5 Ton Gas Split"
+    },
+    {
+      "file": "PolarAir_ACPro_Equipment_v7_AHRI_SEER2_ALL_TONNAGES_CLEAN.csv",
+      "row": 6,
+      "name": "AC Pro M-Series Package Heat Pump - 5 Ton",
+      "key": "EQUIPMENT|AC PRO M SERIES|AC Pro M-Series Package Heat Pump - 5 Ton"
+    }
+  ],
+  "byFile": {
+    "DayNight_ACPro_AI_Catalog.xlsx": {
+      "file": "DayNight_ACPro_AI_Catalog.xlsx",
+      "extension": ".xlsx",
+      "rowsRead": 317,
+      "errors": [],
+      "warnings": [
+        {
+          "row": 289,
+          "message": "Equipment row: no tonnage parsed from name"
+        },
+        {
+          "row": 289,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 290,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 291,
+          "message": "Equipment row: no tonnage parsed from name"
+        },
+        {
+          "row": 291,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 292,
+          "message": "Equipment row: no tonnage parsed from name"
+        },
+        {
+          "row": 292,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 293,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 294,
+          "message": "Equipment row: no tonnage parsed from name"
+        },
+        {
+          "row": 294,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 295,
+          "message": "Equipment row: no tonnage parsed from name"
+        },
+        {
+          "row": 295,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 296,
+          "message": "Equipment row: no tonnage parsed from name"
+        },
+        {
+          "row": 296,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 297,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 298,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 299,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 300,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 301,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 302,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 303,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 304,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 305,
+          "message": "Equipment row: no tonnage parsed from name"
+        },
+        {
+          "row": 305,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 306,
+          "message": "Equipment row: no tonnage parsed from name"
+        },
+        {
+          "row": 306,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 307,
+          "message": "Equipment row: no tonnage parsed from name"
+        },
+        {
+          "row": 307,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 308,
+          "message": "Equipment row: no tonnage parsed from name"
+        },
+        {
+          "row": 308,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 309,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 310,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 311,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 312,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 313,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 314,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 315,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 316,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 317,
+          "message": "Equipment row: no tonnage parsed from name"
+        },
+        {
+          "row": 317,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        },
+        {
+          "row": 318,
+          "message": "Equipment row: no tonnage parsed from name"
+        },
+        {
+          "row": 318,
+          "message": "Equipment row: no system type (Heat Pump / AC / Package) parsed from name"
+        }
+      ],
+      "duplicates": [
+        {
+          "row": 33,
+          "name": "Day & Night 3 Ton Heat Pump Split"
+        },
+        {
+          "row": 35,
+          "name": "Day & Night 4 Ton Heat Pump Split"
+        },
+        {
+          "row": 39,
+          "name": "Day & Night 3 Ton Heat Pump Split"
+        },
+        {
+          "row": 41,
+          "name": "Day & Night 4 Ton Heat Pump Split"
+        },
+        {
+          "row": 52,
+          "name": "Day & Night 3 Ton Heat Pump Split"
+        },
+        {
+          "row": 54,
+          "name": "Day & Night 4 Ton Heat Pump Split"
+        },
+        {
+          "row": 60,
+          "name": "Day & Night 3 Ton Heat Pump Split"
+        },
+        {
+          "row": 62,
+          "name": "Day & Night 3.5 Ton Heat Pump Split"
+        },
+        {
+          "row": 64,
+          "name": "Day & Night 4 Ton Heat Pump Split"
+        },
+        {
+          "row": 67,
+          "name": "Day & Night 1.5 Ton Heat Pump Split"
+        },
+        {
+          "row": 69,
+          "name": "Day & Night 2 Ton Heat Pump Split"
+        },
+        {
+          "row": 71,
+          "name": "Day & Night 2.5 Ton Heat Pump Split"
+        },
+        {
+          "row": 73,
+          "name": "Day & Night 3 Ton Heat Pump Split"
+        },
+        {
+          "row": 75,
+          "name": "Day & Night 3.5 Ton Heat Pump Split"
+        },
+        {
+          "row": 77,
+          "name": "Day & Night 4 Ton Heat Pump Split"
+        },
+        {
+          "row": 87,
+          "name": "Day & Night 5 Ton Gas Split"
+        },
+        {
+          "row": 89,
+          "name": "Day & Night 2 Ton Gas Split"
+        },
+        {
+          "row": 90,
+          "name": "Day & Night 2 Ton Gas Split"
+        },
+        {
+          "row": 91,
+          "name": "Day & Night 2 Ton Gas Split"
+        },
+        {
+          "row": 93,
+          "name": "Day & Night 2.5 Ton Gas Split"
+        },
+        {
+          "row": 95,
+          "name": "Day & Night 3 Ton Gas Split"
+        },
+        {
+          "row": 97,
+          "name": "Day & Night 3.5 Ton Gas Split"
+        },
+        {
+          "row": 98,
+          "name": "Day & Night 3.5 Ton Gas Split"
+        },
+        {
+          "row": 100,
+          "name": "Day & Night 4 Ton Gas Split"
+        },
+        {
+          "row": 101,
+          "name": "Day & Night 4 Ton Gas Split"
+        },
+        {
+          "row": 103,
+          "name": "Day & Night 5 Ton Gas Split"
+        },
+        {
+          "row": 104,
+          "name": "Day & Night 5 Ton Gas Split"
+        },
+        {
+          "row": 112,
+          "name": "Day & Night 2.5 Ton Gas Split"
+        },
+        {
+          "row": 114,
+          "name": "Day & Night 3 Ton Gas Split"
+        },
+        {
+          "row": 116,
+          "name": "Day & Night 3.5 Ton Gas Split"
+        },
+        {
+          "row": 118,
+          "name": "Day & Night 4 Ton Gas Split"
+        },
+        {
+          "row": 120,
+          "name": "Day & Night 5 Ton Gas Split"
+        },
+        {
+          "row": 156,
+          "name": "Day & Night 2 Ton Heat Pump Split"
+        },
+        {
+          "row": 158,
+          "name": "Day & Night 3 Ton Heat Pump Split"
+        },
+        {
+          "row": 159,
+          "name": "Day & Night 3 Ton Heat Pump Split"
+        },
+        {
+          "row": 161,
+          "name": "Day & Night 4 Ton Heat Pump Split"
+        },
+        {
+          "row": 162,
+          "name": "Day & Night 4 Ton Heat Pump Split"
+        },
+        {
+          "row": 163,
+          "name": "Day & Night 4 Ton Heat Pump Split"
+        },
+        {
+          "row": 165,
+          "name": "Day & Night 5 Ton Heat Pump Split"
+        },
+        {
+          "row": 169,
+          "name": "Day & Night 3 Ton Heat Pump Split"
+        },
+        {
+          "row": 174,
+          "name": "Day & Night 1.5 Ton Heat Pump Split"
+        },
+        {
+          "row": 176,
+          "name": "Day & Night 2 Ton Heat Pump Split"
+        },
+        {
+          "row": 178,
+          "name": "Day & Night 2.5 Ton Heat Pump Split"
+        },
+        {
+          "row": 180,
+          "name": "Day & Night 3 Ton Heat Pump Split"
+        },
+        {
+          "row": 182,
+          "name": "Day & Night 3.5 Ton Heat Pump Split"
+        },
+        {
+          "row": 184,
+          "name": "Day & Night 4 Ton Heat Pump Split"
+        },
+        {
+          "row": 188,
+          "name": "Day & Night 3 Ton Heat Pump Split"
+        },
+        {
+          "row": 189,
+          "name": "Day & Night 3 Ton Heat Pump Split"
+        },
+        {
+          "row": 191,
+          "name": "Day & Night 4 Ton Heat Pump Split"
+        },
+        {
+          "row": 197,
+          "name": "Day & Night 3 Ton Heat Pump Split"
+        },
+        {
+          "row": 199,
+          "name": "Day & Night 3.5 Ton Heat Pump Split"
+        },
+        {
+          "row": 203,
+          "name": "Day & Night 1.5 Ton Heat Pump Split"
+        },
+        {
+          "row": 205,
+          "name": "Day & Night 2 Ton Heat Pump Split"
+        },
+        {
+          "row": 207,
+          "name": "Day & Night 2.5 Ton Heat Pump Split"
+        },
+        {
+          "row": 209,
+          "name": "Day & Night 3 Ton Heat Pump Split"
+        },
+        {
+          "row": 211,
+          "name": "Day & Night 3.5 Ton Heat Pump Split"
+        },
+        {
+          "row": 213,
+          "name": "Day & Night 4 Ton Heat Pump Split"
+        },
+        {
+          "row": 220,
+          "name": "Day & Night 3.5 Ton Heat Pump Split"
+        },
+        {
+          "row": 222,
+          "name": "Day & Night 4 Ton Heat Pump Split"
+        },
+        {
+          "row": 227,
+          "name": "Day & Night 2 Ton Gas Split"
+        },
+        {
+          "row": 228,
+          "name": "Day & Night 2 Ton Gas Split"
+        },
+        {
+          "row": 229,
+          "name": "Day & Night 2 Ton Gas Split"
+        },
+        {
+          "row": 231,
+          "name": "Day & Night 3 Ton Gas Split"
+        },
+        {
+          "row": 233,
+          "name": "Day & Night 4 Ton Gas Split"
+        },
+        {
+          "row": 234,
+          "name": "Day & Night 4 Ton Gas Split"
+        },
+        {
+          "row": 235,
+          "name": "Day & Night 4 Ton Gas Split"
+        },
+        {
+          "row": 237,
+          "name": "Day & Night 5 Ton Gas Split"
+        },
+        {
+          "row": 238,
+          "name": "Day & Night 5 Ton Gas Split"
+        },
+        {
+          "row": 239,
+          "name": "Day & Night 5 Ton Gas Split"
+        },
+        {
+          "row": 241,
+          "name": "Day & Night 2 Ton Gas Split"
+        },
+        {
+          "row": 242,
+          "name": "Day & Night 2 Ton Gas Split"
+        },
+        {
+          "row": 243,
+          "name": "Day & Night 2 Ton Gas Split"
+        },
+        {
+          "row": 245,
+          "name": "Day & Night 2.5 Ton Gas Split"
+        },
+        {
+          "row": 247,
+          "name": "Day & Night 3 Ton Gas Split"
+        },
+        {
+          "row": 249,
+          "name": "Day & Night 3.5 Ton Gas Split"
+        },
+        {
+          "row": 250,
+          "name": "Day & Night 3.5 Ton Gas Split"
+        },
+        {
+          "row": 252,
+          "name": "Day & Night 4 Ton Gas Split"
+        },
+        {
+          "row": 253,
+          "name": "Day & Night 4 Ton Gas Split"
+        },
+        {
+          "row": 255,
+          "name": "Day & Night 5 Ton Gas Split"
+        },
+        {
+          "row": 256,
+          "name": "Day & Night 5 Ton Gas Split"
+        },
+        {
+          "row": 258,
+          "name": "Day & Night 2 Ton Gas Split"
+        },
+        {
+          "row": 260,
+          "name": "Day & Night 3 Ton Gas Split"
+        },
+        {
+          "row": 262,
+          "name": "Day & Night 4 Ton Gas Split"
+        },
+        {
+          "row": 264,
+          "name": "Day & Night 5 Ton Gas Split"
+        },
+        {
+          "row": 267,
+          "name": "Day & Night 3 Ton Gas Split"
+        },
+        {
+          "row": 269,
+          "name": "Day & Night 4 Ton Gas Split"
+        },
+        {
+          "row": 271,
+          "name": "Day & Night 5 Ton Gas Split"
+        },
+        {
+          "row": 274,
+          "name": "Day & Night 2 Ton Gas Split"
+        },
+        {
+          "row": 276,
+          "name": "Day & Night 2.5 Ton Gas Split"
+        },
+        {
+          "row": 278,
+          "name": "Day & Night 3 Ton Gas Split"
+        },
+        {
+          "row": 279,
+          "name": "Day & Night 3 Ton Gas Split"
+        },
+        {
+          "row": 281,
+          "name": "Day & Night 3.5 Ton Gas Split"
+        },
+        {
+          "row": 282,
+          "name": "Day & Night 3.5 Ton Gas Split"
+        },
+        {
+          "row": 284,
+          "name": "Day & Night 4 Ton Gas Split"
+        },
+        {
+          "row": 285,
+          "name": "Day & Night 4 Ton Gas Split"
+        },
+        {
+          "row": 286,
+          "name": "Day & Night 4 Ton Gas Split"
+        },
+        {
+          "row": 288,
+          "name": "Day & Night 5 Ton Gas Split"
+        }
+      ],
+      "sheetStats": {
+        "Catalog_DayNight_AI": 0,
+        "Catalog_ACPro_AI": 0,
+        "Catalog_All_AI": 317,
+        "Validation": 0
+      }
+    },
+    "PolarAir_ACPro_Equipment_v7_AHRI_SEER2_ALL_TONNAGES_CLEAN.csv": {
+      "file": "PolarAir_ACPro_Equipment_v7_AHRI_SEER2_ALL_TONNAGES_CLEAN.csv",
+      "extension": ".csv",
+      "rowsRead": 36,
+      "errors": [],
+      "warnings": [],
+      "duplicates": [
+        {
+          "row": 6,
+          "name": "AC Pro M-Series Package Heat Pump - 5 Ton"
+        }
+      ]
+    },
+    "PolarAir_ChangeOut_Pricebook_v1.csv": {
+      "file": "PolarAir_ChangeOut_Pricebook_v1.csv",
+      "extension": ".csv",
+      "rowsRead": 14,
+      "errors": [],
+      "warnings": [],
+      "duplicates": []
+    }
+  }
+}
